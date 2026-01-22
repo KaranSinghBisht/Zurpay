@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+target/
+
+# Anchor
+programs/**/target/
+.anchor/
+
+# Noir
+circuits/**/target/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Turbo
+.turbo/
+
+# Keys (never commit)
+*.pem
+*.key
+keypair*.json
+*-keypair.json
+id.json
+
+# Misc
+*.tsbuildinfo
+
+# Prisma generated engine binaries (large files)
+*.dylib.node
+*.wasm
+**/prisma/runtime/
+
+# SQLite databases
+*.db
+*.sqlite

@@ -1,0 +1,182 @@
+ZURPAY CRITICAL SECURITY PATCHES
+=================================
+
+Apply these patches BEFORE any deployment.
+
+================================================================================
+PATCH 1: claim.rs - Fix ZK Verifier and Treasury Constraints
+================================================================================
+
+--- a/programs/zurpay_payroll/src/instructions/claim.rs
++++ b/programs/zurpay_payroll/src/instructions/claim.rs
+@@ -4,6 +4,9 @@ use crate::state::{Org, Payrun, Nullifier};
+ use crate::error::ZurpayError;
+ 
+ pub const INCO_LIGHTNING_PROGRAM_ID: Pubkey = solana_program::pubkey!("5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj");
++
++// CRITICAL: Replace with your deployed Sunspot verifier program ID
++pub const ZK_VERIFIER_PROGRAM_ID: Pubkey = solana_program::pubkey!("YOUR_VERIFIER_PROGRAM_ID_HERE");
+ 
+ #[derive(Accounts)]
+ #[instruction(nullifier_hash: [u8; 32])]
+@@ -34,18 +37,23 @@ pub struct Claim<'info> {
+     )]
+     pub nullifier: Account<'info, Nullifier>,
+     
+-    /// CHECK: ZK verifier program - validated by CPI
++    /// CHECK: ZK verifier program - address constraint ensures correct program
++    #[account(address = ZK_VERIFIER_PROGRAM_ID)]
+     pub zk_verifier_program: UncheckedAccount<'info>,
+     
+     /// CHECK: Inco Lightning program for confidential transfers
+     #[account(address = INCO_LIGHTNING_PROGRAM_ID)]
+     pub inco_program: UncheckedAccount<'info>,
+     
+-    /// CHECK: Source confidential token account (treasury)
+-    #[account(mut)]
++    /// CHECK: Source confidential token account (treasury) - must match org config
++    #[account(
++        mut,
++        constraint = treasury_conf_account.key() == org.treasury_conf_account @ ZurpayError::InvalidTreasury
++    )]
+     pub treasury_conf_account: UncheckedAccount<'info>,
+     
+-    /// CHECK: Destination confidential token account (claimer)
++    /// CHECK: Destination confidential token account (claimer) - validated against proof
+     #[account(mut)]
+     pub claimer_conf_account: UncheckedAccount<'info>,
+     
+@@ -53,6 +61,8 @@ pub struct Claim<'info> {
+ }
+ 
+ pub fn handler(
++    use solana_program::hash::hash;
++    
+     ctx: Context<Claim>,
+     nullifier_hash: [u8; 32],
+     payout_pubkey_hash: [u8; 32],
+@@ -70,6 +80,13 @@ pub fn handler(
+     
+     verify_public_inputs(&public_inputs, &payrun.merkle_root, &nullifier_hash, &payout_pubkey_hash)?;
+     
++    // CRITICAL: Verify claimer_conf_account matches the payout destination committed in proof
++    let actual_payout_hash = hash(ctx.accounts.claimer_conf_account.key.as_ref());
++    require!(
++        actual_payout_hash.to_bytes() == payout_pubkey_hash,
++        ZurpayError::PayoutMismatch
++    );
++    
+     verify_zk_proof(
+         &ctx.accounts.zk_verifier_program,
+         &proof_bytes,
+
+================================================================================
+PATCH 2: error.rs - Add New Error Variants
+================================================================================
+
+--- a/programs/zurpay_payroll/src/error.rs
++++ b/programs/zurpay_payroll/src/error.rs
+@@ -22,4 +22,10 @@ pub enum ZurpayError {
+     
+     #[msg("Invalid merkle root")]
+     InvalidMerkleRoot,
++    
++    #[msg("Treasury account does not match org configuration")]
++    InvalidTreasury,
++    
++    #[msg("Payout account does not match proof commitment")]
++    PayoutMismatch,
+ }
+
+================================================================================
+PATCH 3: main.nr - Fix payout_pubkey_hash Constraint and Add org_id
+================================================================================
+
+--- a/circuits/claim_eligibility/src/main.nr
++++ b/circuits/claim_eligibility/src/main.nr
+@@ -44,11 +44,13 @@ fn compute_merkle_root(
+ fn main(
+     merkle_root: pub [u8; 32],
+     nullifier: pub [u8; 32],
+     payout_pubkey_hash: pub [u8; 32],
++    org_id: pub [u8; 32],
+     employee_secret: [u8; 32],
+     salary_commitment: [u8; 32],
+     payrun_id: [u8; 32],
+     merkle_path: [[u8; 32]; TREE_DEPTH],
+-    path_indices: [bool; TREE_DEPTH]
++    path_indices: [bool; TREE_DEPTH],
++    payout_pubkey: [u8; 32]
+ ) {
+     let employee_commitment = compute_sha256_field(employee_secret);
+     
+@@ -60,13 +62,19 @@ fn main(
+         assert(computed_root[i] == merkle_root[i]);
+     }
+     
+-    let computed_nullifier = concat_and_hash_2x32(payrun_id, employee_secret);
++    // Domain separation: include org_id to prevent cross-org nullifier collision
++    let domain_sep = concat_and_hash_2x32(org_id, payrun_id);
++    let computed_nullifier = concat_and_hash_2x32(domain_sep, employee_secret);
+     
+     for i in 0..32 {
+         assert(computed_nullifier[i] == nullifier[i]);
+     }
+     
+-    let _ = payout_pubkey_hash;
++    // CRITICAL: Verify payout destination is correctly committed
++    let computed_payout_hash = compute_sha256_field(payout_pubkey);
++    for i in 0..32 {
++        assert(computed_payout_hash[i] == payout_pubkey_hash[i]);
++    }
+ }
+
+================================================================================
+PATCH 4: SDK utils.ts - Update serializePublicInputs for new circuit
+================================================================================
+
+--- a/packages/sdk/src/utils.ts
++++ b/packages/sdk/src/utils.ts
+@@ -61,14 +61,17 @@ export function computePayoutPubkeyHash(payoutPubkey: PublicKey): Uint8Array {
+   return sha256(payoutPubkey.toBytes());
+ }
+ 
+-// Format: root (32) || nullifier (32) || payoutPubkeyHash (32) - matches Sunspot verifier input format
++// Format: root (32) || nullifier (32) || payoutPubkeyHash (32) || orgId (32)
+ export function serializePublicInputs(
+   merkleRoot: Uint8Array,
+   nullifier: Uint8Array,
+-  payoutPubkeyHash: Uint8Array
++  payoutPubkeyHash: Uint8Array,
++  orgId: Uint8Array
+ ): Uint8Array {
+-  const result = new Uint8Array(96);
++  const result = new Uint8Array(128);
+   result.set(merkleRoot, 0);
+   result.set(nullifier, 32);
+   result.set(payoutPubkeyHash, 64);
++  result.set(orgId, 96);
+   return result;
+ }
+
+================================================================================
+PATCH 5: SDK merkle.ts - Update nullifier computation for org_id
+================================================================================
+
+--- a/packages/sdk/src/merkle.ts
++++ b/packages/sdk/src/merkle.ts
+@@ -41,8 +41,10 @@ export function computeSalaryCommitment(amount: bigint): Uint8Array {
+ }
+ 
+ // nullifier = sha256(payrunId || employeeSecret) - must match Noir circuit
+-export function computeNullifier(payrunId: Uint8Array, employeeSecret: Uint8Array): Uint8Array {
+-  return sha256(concat(payrunId, employeeSecret));
++// Updated: now includes org_id for domain separation
++export function computeNullifier(orgId: Uint8Array, payrunId: Uint8Array, employeeSecret: Uint8Array): Uint8Array {
++  const domainSep = sha256(concat(orgId, payrunId));
++  return sha256(concat(domainSep, employeeSecret));
+ }
+
+================================================================================
+END OF CRITICAL PATCHES
+================================================================================

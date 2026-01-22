@@ -1,0 +1,46 @@
+{
+  "name": "zurpay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Confidential payroll and contractor payouts on Solana - amounts encrypted by default, claims gated by ZK",
+  "keywords": [
+    "solana",
+    "privacy",
+    "payroll",
+    "inco",
+    "noir",
+    "zk",
+    "confidential"
+  ],
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "anchor:build": "cd programs/zurpay_payroll && anchor build",
+    "anchor:test": "cd programs/zurpay_payroll && anchor test",
+    "anchor:deploy": "cd programs/zurpay_payroll && anchor deploy",
+    "noir:build": "cd circuits/claim_eligibility && nargo compile",
+    "noir:test": "cd circuits/claim_eligibility && nargo test"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "prettier": "^3.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "npm@10.9.4"
+}

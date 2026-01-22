@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #1a1a2e;
+  --accent: #34d399;
+  --primary: #10b981;
+  --text-primary: #ffffff;
+  --text-muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  @apply antialiased;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Text gradient */
+.text-gradient {
+  background: linear-gradient(135deg, #FFF 0%, #34d399 50%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Grid pattern background */
+.grid-pattern {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Animations */
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 bg-primary hover:bg-primary/80 text-black font-bold rounded-xl transition-all duration-200;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  @apply px-6 py-3 bg-white/5 border border-white/10 text-white font-medium rounded-xl transition-all duration-200 hover:bg-white/10;
+}
+
+/* Form inputs */
+input,
+select,
+textarea {
+  @apply bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none transition-all;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  @apply border-accent/50 ring-2 ring-accent/20;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

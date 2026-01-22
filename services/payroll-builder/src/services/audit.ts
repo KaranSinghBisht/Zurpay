@@ -1,0 +1,75 @@
+import { prisma } from '../db';
+
+export interface AuditLogParams {
+  orgId: string;
+  actorWallet: string;
+  action: string;
+  entityType?: string;
+  entityId?: string;
+  metadata?: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export async function createAuditLog(params: AuditLogParams) {
+  return prisma.auditLog.create({
+    data: {
+      orgId: params.orgId,
+      actorWallet: params.actorWallet,
+      action: params.action,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+      ipAddress: params.ipAddress,
+      userAgent: params.userAgent,
+    },
+  });
+}
+
+export const AuditActions = {
+  CREATE_ORG: 'CREATE_ORG',
+  UPDATE_ORG: 'UPDATE_ORG',
+
+  ADD_MEMBER: 'ADD_MEMBER',
+  UPDATE_MEMBER: 'UPDATE_MEMBER',
+  REMOVE_MEMBER: 'REMOVE_MEMBER',
+
+  CREATE_WORKER: 'CREATE_WORKER',
+  UPDATE_WORKER: 'UPDATE_WORKER',
+  DEACTIVATE_WORKER: 'DEACTIVATE_WORKER',
+
+  CREATE_COMP_PLAN: 'CREATE_COMP_PLAN',
+  UPDATE_COMP_PLAN: 'UPDATE_COMP_PLAN',
+
+  CREATE_PAYRUN: 'CREATE_PAYRUN',
+  UPDATE_PAYRUN: 'UPDATE_PAYRUN',
+  VALIDATE_PAYRUN: 'VALIDATE_PAYRUN',
+  EXECUTE_PAYRUN: 'EXECUTE_PAYRUN',
+  CLOSE_PAYRUN: 'CLOSE_PAYRUN',
+  CANCEL_PAYRUN: 'CANCEL_PAYRUN',
+
+  CREATE_PAYSLIP: 'CREATE_PAYSLIP',
+  UPDATE_PAYSLIP: 'UPDATE_PAYSLIP',
+
+  CREATE_PAYLINK: 'CREATE_PAYLINK',
+  CLAIM_PAYLINK: 'CLAIM_PAYLINK',
+  CANCEL_PAYLINK: 'CANCEL_PAYLINK',
+
+  CONFIGURE_MULTISIG: 'CONFIGURE_MULTISIG',
+  DISABLE_MULTISIG: 'DISABLE_MULTISIG',
+  CREATE_PROPOSAL: 'CREATE_PROPOSAL',
+  APPROVE_PROPOSAL: 'APPROVE_PROPOSAL',
+  REJECT_PROPOSAL: 'REJECT_PROPOSAL',
+  EXECUTE_PROPOSAL: 'EXECUTE_PROPOSAL',
+
+  SUBMIT_FOR_APPROVAL: 'SUBMIT_FOR_APPROVAL',
+  APPROVE_PAYRUN: 'APPROVE_PAYRUN',
+  REJECT_PAYRUN: 'REJECT_PAYRUN',
+
+  CREATE_SCHEDULE: 'CREATE_SCHEDULE',
+  UPDATE_SCHEDULE: 'UPDATE_SCHEDULE',
+  DELETE_SCHEDULE: 'DELETE_SCHEDULE',
+  RUN_SCHEDULE: 'RUN_SCHEDULE',
+
+  EXPORT_DATA: 'EXPORT_DATA',
+} as const;

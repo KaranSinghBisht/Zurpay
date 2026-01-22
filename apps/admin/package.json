@@ -1,0 +1,44 @@
+{
+  "name": "@zurpay/admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/wallet-adapter-react-ui": "^0.9.35",
+    "@solana/wallet-adapter-wallets": "^0.19.32",
+    "@solana/web3.js": "^1.95.0",
+    "@types/d3": "^7.4.3",
+    "@types/d3-sankey": "^0.12.5",
+    "@zurpay/db": "*",
+    "@zurpay/sdk": "*",
+    "bs58": "^6.0.0",
+    "canvas-confetti": "^1.9.4",
+    "d3": "^7.9.0",
+    "d3-sankey": "^0.12.3",
+    "framer-motion": "^12.27.0",
+    "jose": "^6.0.11",
+    "lucide-react": "^0.562.0",
+    "next": "14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^3.6.0",
+    "tweetnacl": "^1.0.3",
+    "zod": "^3.25.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.0"
+  }
+}
