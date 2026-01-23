@@ -5,7 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { deriveOrgPda, derivePayrunPda, hexToBytes, ZURPAY_PROGRAM_ID } from '@zurpay/sdk';
-import { api, Org, Payrun, Payslip, ApprovalRequest } from '../../../../../lib/api';
+import {
+  api,
+  Org,
+  Payrun,
+  Payslip,
+  ApprovalRequest,
+  MultisigProposal,
+} from '../../../../../lib/api';
 import { env } from '../../../../../lib/env';
 
 function formatAmount(amount: string): string {
@@ -74,6 +81,10 @@ export default function PayrunDetailPage() {
   const [org, setOrg] = useState<Org | null>(null);
   const [payrun, setPayrun] = useState<(Payrun & { payslips: Payslip[] }) | null>(null);
   const [approvalHistory, setApprovalHistory] = useState<ApprovalRequest[]>([]);
+  const [multisigProposals, setMultisigProposals] = useState<MultisigProposal[]>([]);
+  const [multisigInfo, setMultisigInfo] = useState<{ enabled: boolean; threshold?: number } | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +140,19 @@ export default function PayrunDetailPage() {
         // Approval history may not exist for all payruns
         setApprovalHistory([]);
       }
+
+      // Load multisig info and proposals
+      try {
+        const info = await api.payrunMultisig.getMultisigInfo(selectedOrg.id, wallet);
+        setMultisigInfo(info);
+
+        if (info.enabled) {
+          const proposals = await api.payrunMultisig.getProposals(selectedOrg.id, payrunId, wallet);
+          setMultisigProposals(proposals);
+        }
+      } catch (err) {
+        console.error('Failed to load multisig info:', err);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load payrun');
     } finally {
@@ -178,6 +202,160 @@ export default function PayrunDetailPage() {
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action} payrun`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleProposeToMultisig = async () => {
+    if (!org || !payrun || !wallet || !signTransaction || !publicKey) return;
+
+    setActionLoading('proposeMultisig');
+    setError(null);
+
+    try {
+      const result = await api.payrunMultisig.proposeToMultisig(org.id, payrun.id, wallet);
+
+      const transaction = new Transaction();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      transaction.add(
+        new TransactionInstruction({
+          programId: new PublicKey(result.vaultTransactionIx.programId),
+          keys: result.vaultTransactionIx.keys.map((k) => ({
+            pubkey: new PublicKey(k.pubkey),
+            isSigner: k.isSigner,
+            isWritable: k.isWritable,
+          })),
+          data: Buffer.from(result.vaultTransactionIx.data, 'base64'),
+        })
+      );
+
+      transaction.add(
+        new TransactionInstruction({
+          programId: new PublicKey(result.proposalCreateIx.programId),
+          keys: result.proposalCreateIx.keys.map((k) => ({
+            pubkey: new PublicKey(k.pubkey),
+            isSigner: k.isSigner,
+            isWritable: k.isWritable,
+          })),
+          data: Buffer.from(result.proposalCreateIx.data, 'base64'),
+        })
+      );
+
+      const signedTx = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
+
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
+
+      await loadData();
+    } catch (err) {
+      console.error('Propose error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create proposal');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleVote = async (proposalId: string, approve: boolean) => {
+    if (!org || !wallet || !signTransaction || !publicKey) return;
+
+    setActionLoading(approve ? `approve_${proposalId}` : `reject_${proposalId}`);
+    setError(null);
+
+    try {
+      const result = approve
+        ? await api.payrunMultisig.approve(org.id, proposalId, wallet)
+        : await api.payrunMultisig.reject(org.id, proposalId, wallet);
+
+      const transaction = new Transaction();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      transaction.add(
+        new TransactionInstruction({
+          programId: new PublicKey(result.instruction.programId),
+          keys: result.instruction.keys.map((k) => ({
+            pubkey: new PublicKey(k.pubkey),
+            isSigner: k.isSigner,
+            isWritable: k.isWritable,
+          })),
+          data: Buffer.from(result.instruction.data, 'base64'),
+        })
+      );
+
+      const signedTx = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
+
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
+
+      await api.payrunMultisig.syncProposal(org.id, proposalId, wallet);
+      await loadData();
+    } catch (err) {
+      console.error('Vote error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit vote');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleExecuteMultisig = async (proposalId: string) => {
+    if (!org || !wallet || !signTransaction || !publicKey) return;
+
+    setActionLoading(`execute_${proposalId}`);
+    setError(null);
+
+    try {
+      const result = await api.payrunMultisig.execute(org.id, proposalId, wallet);
+
+      const transaction = new Transaction();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      transaction.add(
+        new TransactionInstruction({
+          programId: new PublicKey(result.instruction.programId),
+          keys: result.instruction.keys.map((k) => ({
+            pubkey: new PublicKey(k.pubkey),
+            isSigner: k.isSigner,
+            isWritable: k.isWritable,
+          })),
+          data: Buffer.from(result.instruction.data, 'base64'),
+        })
+      );
+
+      const signedTx = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
+
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
+
+      await api.payrunMultisig.confirmExecution(org.id, proposalId, signature, wallet);
+      await loadData();
+    } catch (err) {
+      console.error('Execute error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to execute proposal');
     } finally {
       setActionLoading(null);
     }
@@ -576,6 +754,125 @@ export default function PayrunDetailPage() {
         <div className="mb-6 rounded-lg border border-yellow-700/60 bg-yellow-900/30 px-4 py-3 text-sm text-yellow-200">
           Post the payrun on-chain before opening claims. Employees will not be able to claim until
           the on-chain payrun exists.
+        </div>
+      )}
+
+      {/* Multisig Section */}
+      {multisigInfo?.enabled && (
+        <div className="glass-card rounded-xl p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-semibold">Multisig Approval</h3>
+            {payrun.status === 'READY' && multisigProposals.length === 0 && (
+              <button
+                onClick={handleProposeToMultisig}
+                disabled={actionLoading !== null}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-700 rounded-lg transition-colors text-sm"
+              >
+                {actionLoading === 'proposeMultisig' ? 'Proposing...' : 'Propose to Multisig'}
+              </button>
+            )}
+          </div>
+
+          {multisigProposals.length === 0 ? (
+            <p className="text-zinc-400 text-sm">No active multisig proposals for this payrun.</p>
+          ) : (
+            <div className="space-y-4">
+              {multisigProposals.map((proposal) => {
+                const isApproved = proposal.status === 'APPROVED';
+                const isExecuted = proposal.status === 'EXECUTED';
+                const isRejected = proposal.status === 'REJECTED';
+                const hasVoted =
+                  proposal.approvals.includes(wallet!) || proposal.rejections.includes(wallet!);
+                const canVote = !hasVoted && proposal.status === 'PENDING';
+                const canExecute =
+                  proposal.status === 'APPROVED' &&
+                  multisigInfo.threshold !== undefined &&
+                  proposal.approvals.length >= multisigInfo.threshold;
+
+                return (
+                  <div
+                    key={proposal.id}
+                    className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800"
+                  >
+                    <div className="flex flex-col md:flex-row justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className={`px-2 py-0.5 text-xs rounded-full ${
+                              isExecuted
+                                ? 'bg-emerald-900/50 text-emerald-300'
+                                : isApproved
+                                  ? 'bg-blue-900/50 text-blue-300'
+                                  : isRejected
+                                    ? 'bg-red-900/50 text-red-300'
+                                    : 'bg-amber-900/50 text-amber-300'
+                            }`}
+                          >
+                            {proposal.status}
+                          </span>
+                          <h4 className="font-medium">{proposal.title}</h4>
+                        </div>
+                        <p className="text-sm text-zinc-400 mb-3">
+                          {proposal.description || 'No description'}
+                        </p>
+
+                        <div className="flex gap-4 text-sm">
+                          <div className="text-emerald-400">
+                            ✓ {proposal.approvals.length} Approved
+                          </div>
+                          <div className="text-red-400">
+                            ✗ {proposal.rejections.length} Rejected
+                          </div>
+                          <div className="text-zinc-500">
+                            Threshold: {multisigInfo.threshold || '?'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {canVote && (
+                          <>
+                            <button
+                              onClick={() => handleVote(proposal.id, true)}
+                              disabled={actionLoading !== null}
+                              className="px-3 py-1.5 bg-emerald-900/30 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-900/50 rounded-lg transition-colors text-sm"
+                            >
+                              {actionLoading === `approve_${proposal.id}` ? '...' : 'Approve'}
+                            </button>
+                            <button
+                              onClick={() => handleVote(proposal.id, false)}
+                              disabled={actionLoading !== null}
+                              className="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-900/50 rounded-lg transition-colors text-sm"
+                            >
+                              {actionLoading === `reject_${proposal.id}` ? '...' : 'Reject'}
+                            </button>
+                          </>
+                        )}
+
+                        {canExecute && (
+                          <button
+                            onClick={() => handleExecuteMultisig(proposal.id)}
+                            disabled={actionLoading !== null}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors text-sm font-medium"
+                          >
+                            {actionLoading === `execute_${proposal.id}`
+                              ? 'Executing...'
+                              : 'Execute'}
+                          </button>
+                        )}
+
+                        {!canVote && !canExecute && !isExecuted && (
+                          <span className="text-sm text-zinc-500 italic">
+                            {hasVoted ? 'You have voted' : 'Waiting for votes'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

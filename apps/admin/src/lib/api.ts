@@ -695,6 +695,100 @@ export const api = {
       }),
   },
 
+  payrunMultisig: {
+    proposeToMultisig: (orgId: string, payrunId: string, wallet: string) =>
+      fetchApi<{
+        proposalId: string;
+        transactionIndex: string;
+        vaultTransactionIx: {
+          programId: string;
+          keys: Array<{ pubkey: string; isSigner: boolean; isWritable: boolean }>;
+          data: string;
+        };
+        proposalCreateIx: {
+          programId: string;
+          keys: Array<{ pubkey: string; isSigner: boolean; isWritable: boolean }>;
+          data: string;
+        };
+      }>(`/api/v1/orgs/${orgId}/payruns/${payrunId}/propose-multisig`, {
+        method: 'POST',
+        wallet,
+      }),
+
+    getProposals: (orgId: string, payrunId: string, wallet: string) =>
+      fetchApi<MultisigProposal[]>(`/api/v1/orgs/${orgId}/payruns/${payrunId}/multisig-proposals`, {
+        wallet,
+      }),
+
+    approve: (orgId: string, proposalId: string, wallet: string) =>
+      fetchApi<{
+        instruction: {
+          programId: string;
+          keys: Array<{ pubkey: string; isSigner: boolean; isWritable: boolean }>;
+          data: string;
+        };
+      }>(`/api/v1/orgs/${orgId}/multisig-proposals/${proposalId}/approve`, {
+        method: 'POST',
+        wallet,
+      }),
+
+    reject: (orgId: string, proposalId: string, wallet: string) =>
+      fetchApi<{
+        instruction: {
+          programId: string;
+          keys: Array<{ pubkey: string; isSigner: boolean; isWritable: boolean }>;
+          data: string;
+        };
+      }>(`/api/v1/orgs/${orgId}/multisig-proposals/${proposalId}/reject`, {
+        method: 'POST',
+        wallet,
+      }),
+
+    execute: (orgId: string, proposalId: string, wallet: string) =>
+      fetchApi<{
+        instruction: {
+          programId: string;
+          keys: Array<{ pubkey: string; isSigner: boolean; isWritable: boolean }>;
+          data: string;
+        };
+      }>(`/api/v1/orgs/${orgId}/multisig-proposals/${proposalId}/execute`, {
+        method: 'POST',
+        wallet,
+      }),
+
+    syncProposal: (orgId: string, proposalId: string, wallet: string) =>
+      fetchApi<{ proposal: MultisigProposal; payrunUpdated: boolean }>(
+        `/api/v1/orgs/${orgId}/multisig-proposals/${proposalId}/sync`,
+        {
+          method: 'POST',
+          wallet,
+        }
+      ),
+
+    confirmExecution: (orgId: string, proposalId: string, txSignature: string, wallet: string) =>
+      fetchApi<{ success: boolean; proposal: MultisigProposal }>(
+        `/api/v1/orgs/${orgId}/multisig-proposals/${proposalId}/confirm-execution`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ txSignature }),
+          wallet,
+        }
+      ),
+
+    getMultisigInfo: (orgId: string, wallet: string) =>
+      fetchApi<{
+        enabled: boolean;
+        multisigPda?: string;
+        vaultPda?: string;
+        threshold?: number;
+        state?: {
+          threshold: number;
+          transactionIndex: string;
+          members: Array<{ key: string; permissions: number }>;
+        };
+      }>(`/api/v1/orgs/${orgId}/multisig-info`, { wallet }),
+  },
+
   approvals: {
     submitForApproval: (
       orgId: string,
