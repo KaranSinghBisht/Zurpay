@@ -278,6 +278,40 @@ export interface OrgStats {
   }>;
 }
 
+export interface OrgAnalytics {
+  summary: {
+    totalPayruns: number;
+    completedPayruns: number;
+    totalWorkers: number;
+    activeWorkers: number;
+    totalDistributed: string;
+  };
+  claims: {
+    totalPayslips: number;
+    claimedPayslips: number;
+    pendingPayslips: number;
+    payslipClaimRate: number;
+  };
+  paylinks: {
+    total: number;
+    claimed: number;
+    expired: number;
+    active: number;
+    claimRate: number;
+  };
+  performance: {
+    avgClaimTimeHours: number | null;
+    payrunSuccessRate: number;
+  };
+  trends: {
+    payrunsByMonth: Array<{ month: string; count: number }>;
+  };
+  privacy: {
+    encryptedTransfers: number;
+    zkProofsVerified: number;
+  };
+}
+
 export interface MultisigProposal {
   id: string;
   orgId: string;
@@ -387,6 +421,9 @@ export const api = {
 
     getStats: (orgId: string, wallet: string) =>
       fetchApi<OrgStats>(`/api/v1/orgs/${orgId}/stats`, { wallet }),
+
+    getAnalytics: (orgId: string, wallet: string) =>
+      fetchApi<OrgAnalytics>(`/api/v1/orgs/${orgId}/analytics`, { wallet }),
   },
 
   workers: {

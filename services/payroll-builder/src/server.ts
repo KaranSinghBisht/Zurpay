@@ -32,6 +32,7 @@ import multisigRouter from './routes/multisig';
 import approvalsRouter from './routes/approvals';
 import schedulesRouter from './routes/schedules';
 import payrunMultisigRouter from './routes/payrun-multisig';
+import analyticsRouter from './routes/analytics';
 import { apiRateLimit, strictRateLimit } from './middleware/rateLimit';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { verifyClaimTransaction } from './claim-verifier';
@@ -140,6 +141,7 @@ app.use('/api/v1/orgs', multisigRouter);
 app.use('/api/v1/orgs', approvalsRouter);
 app.use('/api/v1/orgs', schedulesRouter);
 app.use('/api/v1/orgs', payrunMultisigRouter);
+app.use('/api/v1/orgs', analyticsRouter);
 app.use('/api/v1', paylinksRouter);
 app.use('/api/v1/claims', claimsRouter);
 
