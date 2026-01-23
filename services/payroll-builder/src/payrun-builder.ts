@@ -44,7 +44,7 @@ export interface BuildPayrunOutput {
   claimPackages: StoredClaimPackage[];
 }
 
-export function buildPayrunFromCsv(input: BuildPayrunInput): BuildPayrunOutput {
+export async function buildPayrunFromCsv(input: BuildPayrunInput): Promise<BuildPayrunOutput> {
   const { orgId, csvData, claimDeadline } = input;
   const orgIdBytes = hexToBytes(orgId);
   const payrunIdBytes = input.payrunId ? hexToBytes(input.payrunId) : generatePayrunId();
@@ -76,7 +76,7 @@ export function buildPayrunFromCsv(input: BuildPayrunInput): BuildPayrunOutput {
     const commitment = computeEmployeeCommitment(secret);
     const salaryCommitment = computeSalaryCommitment(amount, secret);
 
-    const encryptedAmount = encryptAmountForInco(amount);
+    const encryptedAmount = await encryptAmountForInco(amount);
     const ciphertextHash = computeCiphertextHash(encryptedAmount);
 
     const payoutPubkeyHash = computePayoutPubkeyHash(new PublicKey(row.wallet));
@@ -177,7 +177,9 @@ export async function buildPayrunV2(request: CreatePayrunRequestV2): Promise<Bui
       throw new Error('employeeSecretHex is required when employeeCommitmentHex is provided');
     }
 
-    const employeeSecret = emp.employeeSecretHex ? hexToBytes(emp.employeeSecretHex) : generateSecret();
+    const employeeSecret = emp.employeeSecretHex
+      ? hexToBytes(emp.employeeSecretHex)
+      : generateSecret();
     const employeeCommitment = computeEmployeeCommitment(employeeSecret);
     if (emp.employeeCommitmentHex) {
       const expectedCommitment = hexToBytes(emp.employeeCommitmentHex);

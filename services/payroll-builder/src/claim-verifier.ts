@@ -1,14 +1,16 @@
 import { Connection, PublicKey } from '@solana/web3.js';
-import {
-  deriveClaimPdas,
-  deriveNullifierPda,
-  hexToBytes,
-  ZURPAY_PROGRAM_ID,
-} from '@zurpay/sdk';
+import { deriveClaimPdas, deriveNullifierPda, hexToBytes, ZURPAY_PROGRAM_ID } from '@zurpay/sdk';
 import { ClaimPackageV2 } from './types';
 
-const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
-const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
+function getSolanaRpcUrl(): string {
+  const heliusApiKey = process.env.HELIUS_API_KEY;
+  if (heliusApiKey) {
+    return `https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+  }
+  return process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+}
+
+const connection = new Connection(getSolanaRpcUrl(), 'confirmed');
 
 function getMessageKeys(message: any): PublicKey[] {
   if (typeof message.getAccountKeys === 'function') {
@@ -17,7 +19,9 @@ function getMessageKeys(message: any): PublicKey[] {
   return message.accountKeys || [];
 }
 
-function getCompiledInstructions(message: any): Array<{ programIdIndex: number; accounts: number[] }> {
+function getCompiledInstructions(
+  message: any
+): Array<{ programIdIndex: number; accounts: number[] }> {
   return message.compiledInstructions || message.instructions || [];
 }
 

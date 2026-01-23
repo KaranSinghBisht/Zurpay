@@ -34,15 +34,16 @@ export const DEFAULT_INCO_PROGRAM_ID = new PublicKey(
 );
 
 export const DEFAULT_ZK_VERIFIER_PROGRAM_ID = new PublicKey(
-  getEnvOrDefault('ZK_VERIFIER_PROGRAM_ID', '22KzTftAeoPzCjhd8Bo5Bh4T4spEmMg1BfUVXfvAwd54')
+  getEnvOrDefault('ZK_VERIFIER_PROGRAM_ID', '4MZoLmEsXE1hx62GeSRABGzSGEv7isjck8h4rsnidFkU')
 );
 
 export const MERKLE_TREE_DEPTH = 20;
 
 export const MAX_EMPLOYEES_PER_PAYRUN = 2 ** MERKLE_TREE_DEPTH;
 
-export const PUBLIC_INPUTS_SCHEMA_VERSION = 3;
-export const PUBLIC_INPUTS_LEN_V3 = 1036; // Sunspot witness format: 12 header + 32*32 field elements
+export const PUBLIC_INPUTS_SCHEMA_VERSION = 4;
+export const PUBLIC_INPUTS_LEN_V4 = 44;
+export const PUBLIC_INPUTS_LEN_V3 = 1036;
 export const PUBLIC_INPUTS_LEN_V2 = 192;
 
 export const PDA_SEEDS = {

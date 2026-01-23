@@ -24,7 +24,16 @@ function validateEnv(): void {
 
 validateEnv();
 
+function getSolanaRpcUrl(): string {
+  const heliusApiKey = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
+  if (heliusApiKey) {
+    return `https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+  }
+  return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+}
+
 export const env = {
   PAYROLL_BUILDER_URL: process.env.NEXT_PUBLIC_PAYROLL_BUILDER_URL || 'http://localhost:3001',
-  SOLANA_RPC_URL: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.devnet.solana.com',
+  SOLANA_RPC_URL: getSolanaRpcUrl(),
+  HELIUS_API_KEY: process.env.NEXT_PUBLIC_HELIUS_API_KEY || '',
 } as const;

@@ -70,14 +70,16 @@ fn compute_merkle_root(
     current
 }
 
-// Public inputs schema version 3 (compressed):
-// - public_inputs_hash: [u8; 32] = sha256(
-//     merkle_root || nullifier || payout_pubkey_hash || 
-//     org_id || salary_commitment || ciphertext_hash
-//   )
-// Total: 32 bytes (vs 192 bytes in v2)
+fn bytes31_to_field(bytes: [u8; 32]) -> Field {
+    let mut result: Field = 0;
+    for i in 1..32 {
+        result = result * 256 + bytes[i] as Field;
+    }
+    result
+}
+
 fn main(
-    public_inputs_hash: pub [u8; 32],
+    public_inputs_hash: pub Field,
     merkle_root: [u8; 32],
     nullifier: [u8; 32],
     payout_pubkey_hash: [u8; 32],
@@ -90,8 +92,7 @@ fn main(
     path_indices: [bool; TREE_DEPTH],
     payout_pubkey: [u8; 32],
 ) {
-    // Verify public inputs hash matches the hashed values
-    let computed_hash = concat_and_hash_6x32(
+    let computed_hash_bytes = concat_and_hash_6x32(
         merkle_root,
         nullifier,
         payout_pubkey_hash,
@@ -100,9 +101,8 @@ fn main(
         ciphertext_hash,
     );
     
-    for i in 0..32 {
-        assert(computed_hash[i] == public_inputs_hash[i]);
-    }
+    let computed_hash_field = bytes31_to_field(computed_hash_bytes);
+    assert(computed_hash_field == public_inputs_hash);
     // 1. First compute payout_pubkey_hash (needed for leaf)
     let computed_payout_hash = compute_sha256_field(payout_pubkey);
     for i in 0..32 {
@@ -166,8 +166,8 @@ fn test_basic_proof() {
 
     let payout_pubkey_hash = compute_sha256_field(payout_pubkey);
 
-    // Compute public inputs hash for v3
-    let public_inputs_hash = concat_and_hash_6x32(
+    // Compute public inputs hash for v4 (as Field)
+    let public_inputs_hash_bytes = concat_and_hash_6x32(
         merkle_root,
         nullifier,
         payout_pubkey_hash,
@@ -175,6 +175,7 @@ fn test_basic_proof() {
         salary_commitment,
         ciphertext_hash,
     );
+    let public_inputs_hash = bytes31_to_field(public_inputs_hash_bytes);
 
     main(
         public_inputs_hash,

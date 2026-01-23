@@ -216,7 +216,7 @@ export async function validatePayrun(
     const employeeSecret = generateSecret();
     const employeeCommitment = computeEmployeeCommitment(employeeSecret);
     const salaryCommitment = computeSalaryCommitment(BigInt(payslip.amount), employeeSecret);
-    const encryptedAmount = encryptAmountForInco(BigInt(payslip.amount));
+    const encryptedAmount = await encryptAmountForInco(BigInt(payslip.amount));
     const ciphertextHash = computeCiphertextHash(encryptedAmount);
     const nullifier = computeNullifier(orgIdBytes, payrunIdBytes, employeeSecret);
     const payoutPubkeyHash = computePayoutPubkeyHash(
@@ -472,7 +472,7 @@ export async function executePayrun(
     const summary = summarizeBatchExecution(batchResults);
     console.log(
       `Batch execution complete: ${summary.successfulBatches}/${summary.totalBatches} batches succeeded, ` +
-      `${summary.processedItems}/${summary.totalItems} items processed`
+        `${summary.processedItems}/${summary.totalItems} items processed`
     );
 
     const paidCount = summary.processedItems;

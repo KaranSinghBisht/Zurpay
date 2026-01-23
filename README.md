@@ -52,7 +52,7 @@ graph TB
     PB1 --> PB2
     PB2 -->|Store claim packages| PB3
     A2 -->|Set payrun root| SC1
-    
+
     E1 -->|Fetch claim package| PB3
     E3 -->|Verify proof| SC2
     SC2 -->|Transfer encrypted| SC3
@@ -88,6 +88,7 @@ zurpay/
 | Smart Contracts        | Anchor (Solana)         |
 | ZK Proofs              | Noir + Sunspot verifier |
 | Confidential Transfers | Inco Lightning          |
+| RPC Provider           | Helius (recommended)    |
 | Frontend               | Next.js 14 + Tailwind   |
 | Merkle Trees           | SHA256 (matching Noir)  |
 
@@ -122,6 +123,16 @@ nargo --version
 ```bash
 npm install
 ```
+
+### Get a Helius API Key (Recommended)
+
+For enhanced RPC reliability and privacy features, get a free Helius API key:
+
+1. Sign up at [https://dev.helius.xyz](https://dev.helius.xyz)
+2. Create a new project and copy your API key
+3. Add it to your environment files (see Environment Variables section)
+
+> **Why Helius?** Helius provides faster RPCs, better rate limits, and is a sponsor of the Solana Privacy Hackathon.
 
 ## Quick Start (Demo)
 
@@ -167,40 +178,86 @@ See [DEMO.md](./DEMO.md) for the complete step-by-step demo walkthrough.
 
 ## Environment Variables
 
+Copy the example env files and configure:
+
+```bash
+# Payroll Builder Service
+cp services/payroll-builder/.env.example services/payroll-builder/.env
+
+# Admin App
+cp apps/admin/.env.example apps/admin/.env.local
+
+# Employee App
+cp apps/employee/.env.example apps/employee/.env.local
+```
+
+### Helius RPC Configuration (Recommended)
+
+All services support Helius RPC for enhanced reliability. When `HELIUS_API_KEY` is set, the service automatically uses Helius devnet RPC.
+
+| Service         | Environment Variable         |
+| --------------- | ---------------------------- |
+| Admin App       | `NEXT_PUBLIC_HELIUS_API_KEY` |
+| Employee App    | `NEXT_PUBLIC_HELIUS_API_KEY` |
+| Payroll Builder | `HELIUS_API_KEY`             |
+
 ### Admin App (`apps/admin/.env.local`)
 
 ```env
+# Helius API Key (recommended) - get yours at https://dev.helius.xyz
+NEXT_PUBLIC_HELIUS_API_KEY=your-helius-api-key
+
+# Fallback RPC (used when Helius key is not set)
 NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Service URLs
 NEXT_PUBLIC_PAYROLL_BUILDER_URL=http://localhost:3001
 NEXT_PUBLIC_EMPLOYEE_APP_URL=http://localhost:3002
-NEXT_PUBLIC_ZURPAY_PROGRAM_ID=9ChoH5JKgaj1Stc1F1Se4dRVJvaKPkcRfHYMm1RWL2WG
-NEXT_PUBLIC_ZK_VERIFIER_PROGRAM_ID=ZKVrfy1111111111111111111111111111111111111
+
+# Program IDs (Devnet)
+NEXT_PUBLIC_ZURPAY_PROGRAM_ID=Cf9tReQuvS6cb4awYPCVozQnCWYdqia62yRShJs2URy9
+NEXT_PUBLIC_ZK_VERIFIER_PROGRAM_ID=4MZoLmEsXE1hx62GeSRABGzSGEv7isjck8h4rsnidFkU
 NEXT_PUBLIC_INCO_PROGRAM_ID=5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj
 ```
 
 ### Employee App (`apps/employee/.env.local`)
 
 ```env
+# Helius API Key (recommended)
+NEXT_PUBLIC_HELIUS_API_KEY=your-helius-api-key
+
+# Fallback RPC
 NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Service URL
 NEXT_PUBLIC_PAYROLL_BUILDER_URL=http://localhost:3001
-NEXT_PUBLIC_ZURPAY_PROGRAM_ID=9ChoH5JKgaj1Stc1F1Se4dRVJvaKPkcRfHYMm1RWL2WG
-NEXT_PUBLIC_ZK_VERIFIER_PROGRAM_ID=ZKVrfy1111111111111111111111111111111111111
+
+# Program IDs (Devnet)
+NEXT_PUBLIC_ZURPAY_PROGRAM_ID=Cf9tReQuvS6cb4awYPCVozQnCWYdqia62yRShJs2URy9
+NEXT_PUBLIC_ZK_VERIFIER_PROGRAM_ID=4MZoLmEsXE1hx62GeSRABGzSGEv7isjck8h4rsnidFkU
 NEXT_PUBLIC_INCO_PROGRAM_ID=5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj
 ```
 
 ### Payroll Builder Service (`services/payroll-builder/.env`)
 
 ```env
+# Helius API Key (recommended)
+HELIUS_API_KEY=your-helius-api-key
+
+# Fallback RPC
+SOLANA_RPC_URL=https://api.devnet.solana.com
+
+# Database
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/zurpay?schema=public
+
+# Server
 PORT=3001
 JWT_SECRET=change-me-please-use-32-chars-or-more
 PAYROLL_ENCRYPTION_KEY=change-me-please-use-32-chars-or-more
-SOLANA_RPC_URL=https://api.devnet.solana.com
-ZURPAY_PROGRAM_ID=9ChoH5JKgaj1Stc1F1Se4dRVJvaKPkcRfHYMm1RWL2WG
+
+# Prover
 USE_MOCK_PROVER=true
 # For real proofs: SUNSPOT_BIN=/path/to/sunspot
-# Optional: enable legacy endpoints (not recommended)
-# ENABLE_LEGACY_ENDPOINTS=true
 ```
 
 ## How It Works
@@ -223,13 +280,13 @@ USE_MOCK_PROVER=true
 
 ## Privacy Guarantees
 
-| What                    | Status                             |
-| ----------------------- | ---------------------------------- |
-| Salary amounts          | Encrypted (Inco handles)           |
-| Employee list           | Hidden (only Merkle root on-chain) |
-| Double-claim prevention | Nullifier stored on-chain          |
-| Claim destination       | Bound via payout_pubkey_hash       |
-| Ciphertext binding      | Bound via ciphertext_hash in proof |
+| What                    | Status                               |
+| ----------------------- | ------------------------------------ |
+| Salary amounts          | Encrypted (Inco handles)             |
+| Employee list           | Hidden (only Merkle root on-chain)   |
+| Double-claim prevention | Nullifier stored on-chain            |
+| Claim destination       | Bound via payout_pubkey_hash         |
+| Ciphertext binding      | Bound via ciphertext_hash in proof   |
 | Claim links             | Unguessable tokens, not wallet-based |
 
 ## Public Inputs Schema (v2)
@@ -255,11 +312,11 @@ leaf = sha256(payrun_id || employee_commitment || salary_commitment || ciphertex
 
 ## API Endpoints (Payroll Builder)
 
-| Method | Endpoint | Description |
-| ------ | -------- | ----------- |
-| POST | `/api/payruns/create` | Create payrun with tokenized claim links (legacy) |
-| GET | `/api/v1/claims/:token` | Get claim package by token |
-| POST | `/api/v1/claims/:token/mark-used` | Mark token as used after claim |
+| Method | Endpoint                          | Description                                       |
+| ------ | --------------------------------- | ------------------------------------------------- |
+| POST   | `/api/payruns/create`             | Create payrun with tokenized claim links (legacy) |
+| GET    | `/api/v1/claims/:token`           | Get claim package by token                        |
+| POST   | `/api/v1/claims/:token/mark-used` | Mark token as used after claim                    |
 
 ## Run Tests
 

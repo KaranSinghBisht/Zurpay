@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@inco/solana-sdk": "^0.0.2",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@solana/web3.js": "^1.95.0",

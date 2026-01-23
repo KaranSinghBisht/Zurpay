@@ -7,7 +7,6 @@ import { PublicKey } from '@solana/web3.js';
 import {
   ClaimPackageV2,
   submitClaimFromPackage,
-  verifyClaimerMatch,
   deriveClaimPdas,
   ZURPAY_PROGRAM_ID,
   DEFAULT_INCO_PROGRAM_ID,
@@ -80,13 +79,64 @@ export default function PaylinkClaimPage() {
     setError(null);
 
     try {
+      // Debug logging to identify problematic fields
+      console.log('=== ClaimPackage Debug ===');
+      console.log('version:', claimPackage.version);
+      console.log('orgIdHex:', claimPackage.orgIdHex, 'length:', claimPackage.orgIdHex?.length);
+      console.log(
+        'payrunIdHex:',
+        claimPackage.payrunIdHex,
+        'length:',
+        claimPackage.payrunIdHex?.length
+      );
+      console.log('claimerConfAccount:', claimPackage.claimerConfAccount);
+      console.log('treasuryConfAccount:', claimPackage.treasuryConfAccount);
+      console.log('zkVerifierProgramId:', claimPackage.zkVerifierProgramId);
+      console.log('incoProgramId:', claimPackage.incoProgramId);
+      console.log('proofB64 length:', claimPackage.proofB64?.length);
+      console.log('publicInputsB64 length:', claimPackage.publicInputsB64?.length);
+      console.log('encryptedAmountB64 length:', claimPackage.encryptedAmountB64?.length);
+      console.log(
+        'nullifierHex:',
+        claimPackage.nullifierHex,
+        'length:',
+        claimPackage.nullifierHex?.length
+      );
+      console.log(
+        'payoutPubkeyHashHex:',
+        claimPackage.payoutPubkeyHashHex,
+        'length:',
+        claimPackage.payoutPubkeyHashHex?.length
+      );
+      console.log(
+        'salaryCommitmentHex:',
+        claimPackage.salaryCommitmentHex,
+        'length:',
+        claimPackage.salaryCommitmentHex?.length
+      );
+      console.log(
+        'ciphertextHashHex:',
+        claimPackage.ciphertextHashHex,
+        'length:',
+        claimPackage.ciphertextHashHex?.length
+      );
+      console.log(
+        'merkleRootHex:',
+        claimPackage.merkleRootHex,
+        'length:',
+        claimPackage.merkleRootHex?.length
+      );
+      console.log('=========================');
+
       const { org: orgPda, payrun: payrunPda } = deriveClaimPdas(
         claimPackage.orgIdHex,
         claimPackage.payrunIdHex,
         ZURPAY_PROGRAM_ID
       );
+      console.log('Derived PDAs - org:', orgPda.toBase58(), 'payrun:', payrunPda.toBase58());
 
       const claimerConfAccount = new PublicKey(claimPackage.claimerConfAccount);
+      console.log('claimerConfAccount parsed:', claimerConfAccount.toBase58());
 
       const treasuryConfAccount = claimPackage.treasuryConfAccount
         ? new PublicKey(claimPackage.treasuryConfAccount)

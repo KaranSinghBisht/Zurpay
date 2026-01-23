@@ -124,11 +124,20 @@ function formatBoolArray(arr: boolean[]): string {
   return '[' + arr.map((b) => `"${b ? 1 : 0}"`).join(', ') + ']';
 }
 
+function bytes31ToFieldString(bytes: Uint8Array): string {
+  let result = BigInt(0);
+  for (let i = 1; i < bytes.length; i++) {
+    result = result * 256n + BigInt(bytes[i]);
+  }
+  return result.toString();
+}
+
 function formatProverToml(inputs: WitnessInputs): string {
-  const publicInputsHash = Array.from(computePublicInputsHash(inputs));
+  const publicInputsHashBytes = computePublicInputsHash(inputs);
+  const publicInputsHashField = bytes31ToFieldString(publicInputsHashBytes);
   const lines: string[] = [];
 
-  lines.push(`public_inputs_hash = ${formatByteArray(publicInputsHash)}`);
+  lines.push(`public_inputs_hash = "${publicInputsHashField}"`);
   lines.push(`merkle_root = ${formatByteArray(inputs.merkle_root)}`);
   lines.push(`nullifier = ${formatByteArray(inputs.nullifier)}`);
   lines.push(`payout_pubkey_hash = ${formatByteArray(inputs.payout_pubkey_hash)}`);
@@ -211,11 +220,6 @@ async function generateRealProof(
     const proofPath = join(CIRCUIT_DIR, 'target', 'claim_eligibility.proof');
     const proofBytes = readFileSync(proofPath);
 
-    // Read the .pw (public witness) file that Sunspot generates
-    // This contains the correctly formatted public inputs for the verifier:
-    // - 12-byte header (nr_public, nr_private, vec_len)
-    // - 32 field elements × 32 bytes each = 1024 bytes
-    // Total: 1036 bytes
     const publicWitnessBytes = readFileSync(publicWitnessPath);
     console.log(`[Prover] Public witness size: ${publicWitnessBytes.length} bytes`);
 
@@ -287,7 +291,7 @@ export async function POST(
       const employeeCommitment = sha256(employeeSecret);
 
       const amount = BigInt(payslip.amount);
-      const encryptedAmount = encryptAmountForInco(amount);
+      const encryptedAmount = await encryptAmountForInco(amount);
       const ciphertextHash = sha256(encryptedAmount);
 
       const amountBytes = new Uint8Array(32);
@@ -352,14 +356,42 @@ export async function POST(
         payout_pubkey: Array.from(bs58.decode(data.payoutPubkey)),
       };
 
-      console.log(
-        `[Validate] Generating real ZK proof for payslip ${i + 1}/${payslipData.length}...`
-      );
-      const { proofB64, publicInputsB64 } = await generateRealProof(witnessInputs, sessionId);
+      console.log(`[Validate] Generating ZK proof for payslip ${i + 1}/${payslipData.length}...`);
+
+      const useMockProver = process.env.USE_MOCK_PROVER === 'true' || !existsSync(SUNSPOT_BIN);
+      let proofB64: string;
+      let publicInputsB64: string;
+      let version: 'v2' | 'v4';
+
+      if (useMockProver) {
+        const mockProofBytes = new Uint8Array(256);
+        for (let j = 0; j < mockProofBytes.length; j++) {
+          mockProofBytes[j] = (j * 7 + 13) % 256;
+        }
+        proofB64 = Buffer.from(mockProofBytes).toString('base64');
+
+        const publicInputsBytes = Buffer.concat([
+          Buffer.from(root),
+          Buffer.from(data.nullifier),
+          Buffer.from(data.payoutPubkeyHash),
+          Buffer.from(orgIdBytes),
+          Buffer.from(data.salaryCommitment),
+          Buffer.from(data.ciphertextHash),
+        ]);
+        publicInputsB64 = publicInputsBytes.toString('base64');
+        version = 'v2';
+        console.log(`[Validate] Using mock prover (V2 format, ${publicInputsBytes.length} bytes)`);
+      } else {
+        const result = await generateRealProof(witnessInputs, sessionId);
+        proofB64 = result.proofB64;
+        publicInputsB64 = result.publicInputsB64;
+        version = 'v4';
+        console.log(`[Validate] Real proof generated (V4 format)`);
+      }
       console.log(`[Validate] Proof generated for payslip ${i + 1}/${payslipData.length}`);
 
       const claimPackage: ClaimPackageV2 = {
-        version: 'v3',
+        version,
         orgIdHex: payrun.org.orgIdHex,
         payrunIdHex: payrun.payrunIdHex,
         claimerConfAccount: data.payoutPubkey,

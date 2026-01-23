@@ -1,68 +1,212 @@
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
 import { ClaimPackageV2, ClaimAccounts } from './types';
-import { hexToBytes, b64ToBytes, deriveNullifierPda } from './utils';
+import { hexToBytes, deriveNullifierPda } from './utils';
 import { sha256 } from './merkle';
-import { ZURPAY_PROGRAM_ID, PDA_SEEDS } from './constants';
+import {
+  ZURPAY_PROGRAM_ID,
+  PDA_SEEDS,
+  PUBLIC_INPUTS_LEN_V3,
+  DEFAULT_INCO_PROGRAM_ID,
+} from './constants';
+
+function validateHexField(
+  value: string | undefined,
+  fieldName: string,
+  expectedLength: number
+): void {
+  if (!value) {
+    throw new Error(`ClaimPackage validation failed: ${fieldName} is missing`);
+  }
+  const cleanHex = value.startsWith('0x') ? value.slice(2) : value;
+  if (cleanHex.length !== expectedLength * 2) {
+    throw new Error(
+      `ClaimPackage validation failed: ${fieldName} has invalid length (expected ${expectedLength * 2} hex chars, got ${cleanHex.length})`
+    );
+  }
+  if (!/^[0-9a-fA-F]*$/.test(cleanHex)) {
+    throw new Error(`ClaimPackage validation failed: ${fieldName} contains non-hex characters`);
+  }
+}
+
+function validateBase64Field(
+  value: string | undefined,
+  fieldName: string,
+  minLength?: number
+): Uint8Array {
+  if (!value) {
+    throw new Error(`ClaimPackage validation failed: ${fieldName} is missing`);
+  }
+  try {
+    const bytes = Buffer.from(value, 'base64');
+    if (minLength !== undefined && bytes.length < minLength) {
+      throw new Error(
+        `ClaimPackage validation failed: ${fieldName} decoded to ${bytes.length} bytes (expected at least ${minLength})`
+      );
+    }
+    return new Uint8Array(bytes);
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith('ClaimPackage')) throw e;
+    throw new Error(`ClaimPackage validation failed: ${fieldName} is not valid base64`);
+  }
+}
+
+function validatePubkeyField(value: string | undefined, fieldName: string): PublicKey {
+  if (!value) {
+    throw new Error(`ClaimPackage validation failed: ${fieldName} is missing`);
+  }
+  try {
+    return new PublicKey(value);
+  } catch (e) {
+    throw new Error(
+      `ClaimPackage validation failed: ${fieldName} is not a valid base58 pubkey: "${value}"`
+    );
+  }
+}
+
+export function validateClaimPackage(claimPackage: ClaimPackageV2): {
+  orgId: Uint8Array;
+  payrunId: Uint8Array;
+  nullifierHash: Uint8Array;
+  payoutPubkeyHash: Uint8Array;
+  salaryCommitment: Uint8Array;
+  ciphertextHash: Uint8Array;
+  proofBytes: Uint8Array;
+  publicInputsBytes: Uint8Array;
+  encryptedAmount: Uint8Array;
+} {
+  validateHexField(claimPackage.orgIdHex, 'orgIdHex', 32);
+  validateHexField(claimPackage.payrunIdHex, 'payrunIdHex', 32);
+  validateHexField(claimPackage.nullifierHex, 'nullifierHex', 32);
+  validateHexField(claimPackage.payoutPubkeyHashHex, 'payoutPubkeyHashHex', 32);
+  validateHexField(claimPackage.salaryCommitmentHex, 'salaryCommitmentHex', 32);
+  validateHexField(claimPackage.ciphertextHashHex, 'ciphertextHashHex', 32);
+  validateHexField(claimPackage.merkleRootHex, 'merkleRootHex', 32);
+
+  validatePubkeyField(claimPackage.claimerConfAccount, 'claimerConfAccount');
+
+  const proofBytes = validateBase64Field(claimPackage.proofB64, 'proofB64', 100);
+  const publicInputsBytes = validateBase64Field(
+    claimPackage.publicInputsB64,
+    'publicInputsB64',
+    192
+  );
+  const encryptedAmount = validateBase64Field(
+    claimPackage.encryptedAmountB64,
+    'encryptedAmountB64',
+    1
+  );
+
+  if (publicInputsBytes.length !== PUBLIC_INPUTS_LEN_V3 && publicInputsBytes.length !== 192) {
+    throw new Error(
+      `ClaimPackage validation failed: publicInputsB64 decoded to ${publicInputsBytes.length} bytes (expected ${PUBLIC_INPUTS_LEN_V3} for V3 or 192 for V2)`
+    );
+  }
+
+  return {
+    orgId: hexToBytes(claimPackage.orgIdHex),
+    payrunId: hexToBytes(claimPackage.payrunIdHex),
+    nullifierHash: hexToBytes(claimPackage.nullifierHex),
+    payoutPubkeyHash: hexToBytes(claimPackage.payoutPubkeyHashHex),
+    salaryCommitment: hexToBytes(claimPackage.salaryCommitmentHex),
+    ciphertextHash: hexToBytes(claimPackage.ciphertextHashHex),
+    proofBytes,
+    publicInputsBytes,
+    encryptedAmount,
+  };
+}
 
 /**
- * Build a claim instruction from a ClaimPackageV2.
+ * Optional Inco allowance accounts for confidential transfers.
+ * These are needed to allow the claimer to decrypt their new balance.
  */
+export interface IncoAllowanceAccounts {
+  treasuryAllowancePda: PublicKey;
+  treasuryOwnerAddress: PublicKey;
+  claimerAllowancePda: PublicKey;
+  claimerOwnerAddress: PublicKey;
+}
+
 export function buildClaimInstruction(
-    claimPackage: ClaimPackageV2,
-    accounts: ClaimAccounts,
-    claimer: PublicKey,
-    programId: PublicKey = ZURPAY_PROGRAM_ID
+  claimPackage: ClaimPackageV2,
+  accounts: ClaimAccounts,
+  claimer: PublicKey,
+  programId: PublicKey = ZURPAY_PROGRAM_ID,
+  incoAllowanceAccounts?: IncoAllowanceAccounts
 ): TransactionInstruction {
-    const orgId = hexToBytes(claimPackage.orgIdHex);
-    const payrunId = hexToBytes(claimPackage.payrunIdHex);
-    const nullifierHash = hexToBytes(claimPackage.nullifierHex);
-    const payoutPubkeyHash = hexToBytes(claimPackage.payoutPubkeyHashHex);
-    const salaryCommitment = hexToBytes(claimPackage.salaryCommitmentHex);
-    const ciphertextHash = hexToBytes(claimPackage.ciphertextHashHex);
-    const proofBytes = b64ToBytes(claimPackage.proofB64);
-    const publicInputsBytes = b64ToBytes(claimPackage.publicInputsB64);
-    const encryptedAmount = b64ToBytes(claimPackage.encryptedAmountB64);
+  const validated = validateClaimPackage(claimPackage);
+  const {
+    orgId,
+    payrunId,
+    nullifierHash,
+    payoutPubkeyHash,
+    salaryCommitment,
+    ciphertextHash,
+    proofBytes,
+    publicInputsBytes,
+    encryptedAmount,
+  } = validated;
 
-    // Derive nullifier PDA
-    const nullifierPda = deriveNullifierPda(orgId, payrunId, nullifierHash, programId);
+  const nullifierPda = deriveNullifierPda(orgId, payrunId, nullifierHash, programId);
 
-    // Anchor instruction discriminator for "claim"
-    // This is the first 8 bytes of sha256("global:claim")
-    const discriminator = Buffer.from([62, 198, 214, 193, 213, 159, 108, 210]);
+  // Anchor instruction discriminator for "claim"
+  // This is the first 8 bytes of sha256("global:claim")
+  const discriminator = Buffer.from([62, 198, 214, 193, 213, 159, 108, 210]);
 
-    // Encode instruction data
-    const data = Buffer.concat([
-        discriminator,
-        Buffer.from(nullifierHash),
-        Buffer.from(payoutPubkeyHash),
-        Buffer.from(salaryCommitment),
-        Buffer.from(ciphertextHash),
-        // proof_bytes as Vec<u8>: 4 bytes length + data
-        Buffer.from(new Uint32Array([proofBytes.length]).buffer),
-        Buffer.from(proofBytes),
-        // public_inputs as Vec<u8>: 4 bytes length + data
-        Buffer.from(new Uint32Array([publicInputsBytes.length]).buffer),
-        Buffer.from(publicInputsBytes),
-        // encrypted_amount as Vec<u8>: 4 bytes length + data
-        Buffer.from(new Uint32Array([encryptedAmount.length]).buffer),
-        Buffer.from(encryptedAmount),
-    ]);
+  // Helper to encode u32 as little-endian buffer
+  const encodeU32LE = (value: number): Buffer => {
+    const buf = Buffer.alloc(4);
+    buf.writeUInt32LE(value, 0);
+    return buf;
+  };
 
-    return new TransactionInstruction({
-        programId,
-        keys: [
-            { pubkey: claimer, isSigner: true, isWritable: true },
-            { pubkey: accounts.org, isSigner: false, isWritable: false },
-            { pubkey: accounts.payrun, isSigner: false, isWritable: true },
-            { pubkey: nullifierPda, isSigner: false, isWritable: true },
-            { pubkey: accounts.zkVerifierProgram, isSigner: false, isWritable: false },
-            { pubkey: accounts.incoProgram, isSigner: false, isWritable: false },
-            { pubkey: accounts.treasuryConfAccount, isSigner: false, isWritable: true },
-            { pubkey: accounts.claimerConfAccount, isSigner: false, isWritable: true },
-            { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // System program
-        ],
-        data,
-    });
+  // Encode instruction data
+  const data = Buffer.concat([
+    discriminator,
+    Buffer.from(nullifierHash),
+    Buffer.from(payoutPubkeyHash),
+    Buffer.from(salaryCommitment),
+    Buffer.from(ciphertextHash),
+    // proof_bytes as Vec<u8>: 4 bytes length (LE) + data
+    encodeU32LE(proofBytes.length),
+    Buffer.from(proofBytes),
+    // public_inputs as Vec<u8>: 4 bytes length (LE) + data
+    encodeU32LE(publicInputsBytes.length),
+    Buffer.from(publicInputsBytes),
+    // encrypted_amount as Vec<u8>: 4 bytes length (LE) + data
+    encodeU32LE(encryptedAmount.length),
+    Buffer.from(encryptedAmount),
+  ]);
+
+  const keys = [
+    { pubkey: claimer, isSigner: true, isWritable: true },
+    { pubkey: accounts.org, isSigner: false, isWritable: false },
+    { pubkey: accounts.payrun, isSigner: false, isWritable: true },
+    { pubkey: nullifierPda, isSigner: false, isWritable: true },
+    { pubkey: accounts.zkVerifierProgram, isSigner: false, isWritable: false },
+    { pubkey: accounts.incoProgram, isSigner: false, isWritable: false },
+    { pubkey: accounts.treasuryConfAccount, isSigner: false, isWritable: true },
+    { pubkey: accounts.claimerConfAccount, isSigner: false, isWritable: true },
+    {
+      pubkey: new PublicKey('11111111111111111111111111111111'),
+      isSigner: false,
+      isWritable: false,
+    },
+  ];
+
+  if (incoAllowanceAccounts) {
+    keys.push(
+      { pubkey: incoAllowanceAccounts.treasuryAllowancePda, isSigner: false, isWritable: true },
+      { pubkey: incoAllowanceAccounts.treasuryOwnerAddress, isSigner: false, isWritable: false },
+      { pubkey: incoAllowanceAccounts.claimerAllowancePda, isSigner: false, isWritable: true },
+      { pubkey: incoAllowanceAccounts.claimerOwnerAddress, isSigner: false, isWritable: false }
+    );
+  }
+
+  return new TransactionInstruction({
+    programId,
+    keys,
+    data,
+  });
 }
 
 /**
@@ -70,27 +214,27 @@ export function buildClaimInstruction(
  * Returns true if the wallet can claim this package.
  */
 export function verifyClaimerMatch(
-    claimerConfAccountPubkey: PublicKey,
-    claimPackage: ClaimPackageV2
+  claimerConfAccountPubkey: PublicKey,
+  claimPackage: ClaimPackageV2
 ): boolean {
-    const computedHash = sha256(claimerConfAccountPubkey.toBytes());
-    const expectedHash = hexToBytes(claimPackage.payoutPubkeyHashHex);
+  const computedHash = sha256(claimerConfAccountPubkey.toBytes());
+  const expectedHash = hexToBytes(claimPackage.payoutPubkeyHashHex);
 
-    // Compare arrays
-    if (computedHash.length !== expectedHash.length) {
-        return false;
+  // Compare arrays
+  if (computedHash.length !== expectedHash.length) {
+    return false;
+  }
+  for (let i = 0; i < computedHash.length; i++) {
+    if (computedHash[i] !== expectedHash[i]) {
+      return false;
     }
-    for (let i = 0; i < computedHash.length; i++) {
-        if (computedHash[i] !== expectedHash[i]) {
-            return false;
-        }
-    }
-    return true;
+  }
+  return true;
 }
 
 /**
  * High-level function to submit a claim from a ClaimPackageV2.
- * 
+ *
  * @param connection - Solana connection
  * @param wallet - Connected wallet adapter (must have signTransaction)
  * @param claimPackage - The claim package from payroll-builder
@@ -99,84 +243,116 @@ export function verifyClaimerMatch(
  * @returns Transaction signature
  */
 export async function submitClaimFromPackage(
-    connection: Connection,
-    wallet: {
-        publicKey: PublicKey;
-        signTransaction: (tx: Transaction) => Promise<Transaction>;
-    },
-    claimPackage: ClaimPackageV2,
-    accounts: ClaimAccounts,
-    programId: PublicKey = ZURPAY_PROGRAM_ID
+  connection: Connection,
+  wallet: {
+    publicKey: PublicKey;
+    signTransaction: (tx: Transaction) => Promise<Transaction>;
+  },
+  claimPackage: ClaimPackageV2,
+  accounts: ClaimAccounts,
+  programId: PublicKey = ZURPAY_PROGRAM_ID,
+  incoAllowanceAccounts?: IncoAllowanceAccounts
 ): Promise<string> {
-    // Verify claimer matches the payout pubkey hash
-    if (!verifyClaimerMatch(accounts.claimerConfAccount, claimPackage)) {
-        throw new Error(
-            'Claimer confidential account does not match payout_pubkey_hash. This claim is not for your account.'
-        );
-    }
-
-    // Build instruction
-    const instruction = buildClaimInstruction(
-        claimPackage,
-        accounts,
-        wallet.publicKey,
-        programId
+  if (!verifyClaimerMatch(accounts.claimerConfAccount, claimPackage)) {
+    throw new Error(
+      'Claimer confidential account does not match payout_pubkey_hash. This claim is not for your account.'
     );
+  }
 
-    // Create transaction
-    const transaction = new Transaction().add(instruction);
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = wallet.publicKey;
+  const instruction = buildClaimInstruction(
+    claimPackage,
+    accounts,
+    wallet.publicKey,
+    programId,
+    incoAllowanceAccounts
+  );
 
-    // Sign transaction
-    const signedTx = await wallet.signTransaction(transaction);
+  const transaction = new Transaction().add(instruction);
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = wallet.publicKey;
 
-    // Submit transaction
-    const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
-    });
-
-    // Wait for confirmation
-    await connection.confirmTransaction(
-        {
-            signature,
-            blockhash,
-            lastValidBlockHeight,
-        },
-        'confirmed'
+  try {
+    transaction.compileMessage();
+  } catch (compileError) {
+    console.error('Transaction compile error:', compileError);
+    console.error(
+      'Instruction keys:',
+      instruction.keys.map((k, i) => ({
+        index: i,
+        pubkey: k.pubkey.toBase58(),
+        isSigner: k.isSigner,
+        isWritable: k.isWritable,
+      }))
     );
+    console.error('Instruction data length:', instruction.data.length);
+    throw new Error(
+      `Transaction compilation failed: ${compileError instanceof Error ? compileError.message : String(compileError)}`
+    );
+  }
 
-    return signature;
+  const signedTx = await wallet.signTransaction(transaction);
+
+  // Submit transaction
+  const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+    skipPreflight: false,
+    preflightCommitment: 'confirmed',
+  });
+
+  // Wait for confirmation
+  await connection.confirmTransaction(
+    {
+      signature,
+      blockhash,
+      lastValidBlockHeight,
+    },
+    'confirmed'
+  );
+
+  return signature;
 }
 
 /**
  * Derive PDA addresses for a claim from org and payrun IDs.
  */
 export function deriveClaimPdas(
-    orgIdHex: string,
-    payrunIdHex: string,
-    programId: PublicKey = ZURPAY_PROGRAM_ID
+  orgIdHex: string,
+  payrunIdHex: string,
+  programId: PublicKey = ZURPAY_PROGRAM_ID
 ): {
-    org: PublicKey;
-    payrun: PublicKey;
+  org: PublicKey;
+  payrun: PublicKey;
 } {
-    const orgId = hexToBytes(orgIdHex);
-    const payrunId = hexToBytes(payrunIdHex);
+  const orgId = hexToBytes(orgIdHex);
+  const payrunId = hexToBytes(payrunIdHex);
 
-    const [orgPda] = PublicKey.findProgramAddressSync(
-        [PDA_SEEDS.ORG, orgId],
-        programId
-    );
+  const [orgPda] = PublicKey.findProgramAddressSync([PDA_SEEDS.ORG, orgId], programId);
 
-    const [payrunPda] = PublicKey.findProgramAddressSync(
-        [PDA_SEEDS.PAYRUN, orgId, payrunId],
-        programId
-    );
+  const [payrunPda] = PublicKey.findProgramAddressSync(
+    [PDA_SEEDS.PAYRUN, orgId, payrunId],
+    programId
+  );
 
-    return {
-        org: orgPda,
-        payrun: payrunPda,
-    };
+  return {
+    org: orgPda,
+    payrun: payrunPda,
+  };
+}
+
+export function deriveIncoAllowancePda(
+  handle: bigint,
+  allowedAddress: PublicKey,
+  incoProgramId: PublicKey = DEFAULT_INCO_PROGRAM_ID
+): PublicKey {
+  const handleBuffer = Buffer.alloc(16);
+  let h = handle;
+  for (let i = 0; i < 16; i++) {
+    handleBuffer[i] = Number(h & BigInt(0xff));
+    h = h >> BigInt(8);
+  }
+  const [pda] = PublicKey.findProgramAddressSync(
+    [handleBuffer, allowedAddress.toBuffer()],
+    incoProgramId
+  );
+  return pda;
 }

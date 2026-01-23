@@ -1,18 +1,22 @@
 use crate::error::ZurpayError;
 use crate::state::{Nullifier, Org, Payrun};
 use anchor_lang::prelude::*;
+use inco_lightning::cpi::accounts::{Allow, Operation};
+use inco_lightning::cpi::{allow, e_add, e_sub, new_euint128};
+use inco_lightning::types::Euint128;
+
 use solana_program::hash::hash;
 use solana_program::program::invoke;
 
-/// Public inputs schema version - bump when format changes
-pub const PUBLIC_INPUTS_SCHEMA_VERSION: u8 = 3;
+pub const PUBLIC_INPUTS_SCHEMA_VERSION: u8 = 4;
 
-/// Expected length of public inputs for v3 schema (Sunspot witness format):
-/// 12-byte header + 32 field elements × 32 bytes = 1036 bytes
-/// The 32 field elements represent the public_inputs_hash bytes as individual field elements
+/// V4: Single Field element (12-byte header + 1 × 32 bytes = 44 bytes)
+pub const PUBLIC_INPUTS_LEN_V4: usize = 44;
+
+/// V3: 32 field elements (12-byte header + 32 × 32 bytes = 1036 bytes) - TOO LARGE FOR TX
 pub const PUBLIC_INPUTS_LEN_V3: usize = 1036;
 
-/// Legacy v2 length for reference
+/// V2: Raw concatenated hashes (192 bytes)
 pub const PUBLIC_INPUTS_LEN_V2: usize = 192;
 
 #[derive(Accounts)]
@@ -53,12 +57,14 @@ pub struct Claim<'info> {
     #[account(constraint = inco_program.key() == org.inco_program_id @ ZurpayError::InvalidIncoProgram)]
     pub inco_program: UncheckedAccount<'info>,
 
+    /// CHECK: Validated against org.treasury_conf_account - Inco confidential account
     #[account(
         mut,
         constraint = treasury_conf_account.key() == org.treasury_conf_account @ ZurpayError::InvalidTreasury
     )]
     pub treasury_conf_account: UncheckedAccount<'info>,
 
+    /// CHECK: Claimer's Inco confidential account - validated via payout_pubkey_hash in ZK proof
     #[account(mut)]
     pub claimer_conf_account: UncheckedAccount<'info>,
 
@@ -85,7 +91,7 @@ pub fn handler<'info>(
         ZurpayError::PayrunExpired
     );
 
-    verify_public_inputs_v3(
+    verify_public_inputs(
         &public_inputs,
         &payrun.merkle_root,
         &nullifier_hash,
@@ -114,12 +120,13 @@ pub fn handler<'info>(
     )?;
 
     execute_confidential_transfer(
-        &ctx.accounts.inco_program,
-        &ctx.accounts.treasury_conf_account,
-        &ctx.accounts.claimer_conf_account,
+        &ctx.accounts.inco_program.to_account_info(),
+        &ctx.accounts.treasury_conf_account.to_account_info(),
+        &ctx.accounts.claimer_conf_account.to_account_info(),
         &encrypted_amount,
         ctx.remaining_accounts,
-        &org.inco_program_id,
+        &ctx.accounts.claimer.to_account_info(),
+        &ctx.accounts.system_program.to_account_info(),
     )?;
 
     nullifier.nullifier_hash = nullifier_hash;
@@ -144,6 +151,86 @@ pub fn handler<'info>(
     Ok(())
 }
 
+fn verify_public_inputs(
+    public_inputs: &[u8],
+    expected_root: &[u8; 32],
+    expected_nullifier: &[u8; 32],
+    expected_payout_hash: &[u8; 32],
+    expected_org_id: &[u8; 32],
+    expected_salary_commitment: &[u8; 32],
+    expected_ciphertext_hash: &[u8; 32],
+) -> Result<()> {
+    match public_inputs.len() {
+        PUBLIC_INPUTS_LEN_V4 => verify_public_inputs_v4(
+            public_inputs,
+            expected_root,
+            expected_nullifier,
+            expected_payout_hash,
+            expected_org_id,
+            expected_salary_commitment,
+            expected_ciphertext_hash,
+        ),
+        PUBLIC_INPUTS_LEN_V2 => verify_public_inputs_v2(
+            public_inputs,
+            expected_root,
+            expected_nullifier,
+            expected_payout_hash,
+            expected_org_id,
+            expected_salary_commitment,
+            expected_ciphertext_hash,
+        ),
+        PUBLIC_INPUTS_LEN_V3 => verify_public_inputs_v3(
+            public_inputs,
+            expected_root,
+            expected_nullifier,
+            expected_payout_hash,
+            expected_org_id,
+            expected_salary_commitment,
+            expected_ciphertext_hash,
+        ),
+        _ => {
+            msg!("Invalid public inputs length: {}", public_inputs.len());
+            Err(ZurpayError::PublicInputsVersionMismatch.into())
+        }
+    }
+}
+
+fn verify_public_inputs_v2(
+    public_inputs: &[u8],
+    expected_root: &[u8; 32],
+    expected_nullifier: &[u8; 32],
+    expected_payout_hash: &[u8; 32],
+    expected_org_id: &[u8; 32],
+    expected_salary_commitment: &[u8; 32],
+    expected_ciphertext_hash: &[u8; 32],
+) -> Result<()> {
+    require!(
+        &public_inputs[0..32] == expected_root,
+        ZurpayError::PublicInputsMismatch
+    );
+    require!(
+        &public_inputs[32..64] == expected_nullifier,
+        ZurpayError::PublicInputsMismatch
+    );
+    require!(
+        &public_inputs[64..96] == expected_payout_hash,
+        ZurpayError::PublicInputsMismatch
+    );
+    require!(
+        &public_inputs[96..128] == expected_org_id,
+        ZurpayError::PublicInputsMismatch
+    );
+    require!(
+        &public_inputs[128..160] == expected_salary_commitment,
+        ZurpayError::PublicInputsMismatch
+    );
+    require!(
+        &public_inputs[160..192] == expected_ciphertext_hash,
+        ZurpayError::PublicInputsMismatch
+    );
+    Ok(())
+}
+
 fn verify_public_inputs_v3(
     public_inputs: &[u8],
     expected_root: &[u8; 32],
@@ -153,24 +240,12 @@ fn verify_public_inputs_v3(
     expected_salary_commitment: &[u8; 32],
     expected_ciphertext_hash: &[u8; 32],
 ) -> Result<()> {
-    // Sunspot witness format: 12-byte header + 32 field elements × 32 bytes = 1036 bytes
-    require!(
-        public_inputs.len() == PUBLIC_INPUTS_LEN_V3,
-        ZurpayError::PublicInputsVersionMismatch
-    );
-
-    // Skip the 12-byte header and extract the 32 hash bytes from field elements
-    // Each field element is 32 bytes, but only the last byte of each contains our hash byte
-    // (since our hash bytes are small values 0-255, they fit in a single byte of the field element)
     let mut extracted_hash = [0u8; 32];
     for i in 0..32 {
-        // Each field element is 32 bytes, stored in big-endian format
-        // The actual byte value is in the last byte (index 31 of each 32-byte chunk)
         let offset = 12 + i * 32 + 31;
         extracted_hash[i] = public_inputs[offset];
     }
 
-    // Compute expected hash
     let mut preimage = [0u8; 192];
     preimage[0..32].copy_from_slice(expected_root);
     preimage[32..64].copy_from_slice(expected_nullifier);
@@ -189,6 +264,40 @@ fn verify_public_inputs_v3(
     Ok(())
 }
 
+fn verify_public_inputs_v4(
+    public_inputs: &[u8],
+    expected_root: &[u8; 32],
+    expected_nullifier: &[u8; 32],
+    expected_payout_hash: &[u8; 32],
+    expected_org_id: &[u8; 32],
+    expected_salary_commitment: &[u8; 32],
+    expected_ciphertext_hash: &[u8; 32],
+) -> Result<()> {
+    let extracted_field = &public_inputs[12..44];
+
+    let mut preimage = [0u8; 192];
+    preimage[0..32].copy_from_slice(expected_root);
+    preimage[32..64].copy_from_slice(expected_nullifier);
+    preimage[64..96].copy_from_slice(expected_payout_hash);
+    preimage[96..128].copy_from_slice(expected_org_id);
+    preimage[128..160].copy_from_slice(expected_salary_commitment);
+    preimage[160..192].copy_from_slice(expected_ciphertext_hash);
+
+    let expected_hash = hash(&preimage);
+    let expected_hash_bytes = expected_hash.to_bytes();
+
+    let mut expected_field = [0u8; 32];
+    expected_field[0] = 0;
+    expected_field[1..32].copy_from_slice(&expected_hash_bytes[1..32]);
+
+    require!(
+        extracted_field == expected_field,
+        ZurpayError::PublicInputsMismatch
+    );
+
+    Ok(())
+}
+
 fn verify_zk_proof(
     verifier_program: &UncheckedAccount,
     proof_bytes: &[u8],
@@ -198,7 +307,7 @@ fn verify_zk_proof(
     // The public_inputs parameter should be the raw .pw file contents from Sunspot,
     // which already includes the 12-byte header and field elements.
     // Format: proof_bytes + [12-byte header + NR_INPUTS * 32 bytes]
-    
+
     let mut verifier_data = Vec::with_capacity(proof_bytes.len() + public_inputs.len());
     verifier_data.extend_from_slice(proof_bytes);
     verifier_data.extend_from_slice(public_inputs);
@@ -217,86 +326,125 @@ fn verify_zk_proof(
     Ok(())
 }
 
-fn validate_inco_account_owner(account: &UncheckedAccount, inco_program_id: &Pubkey) -> Result<()> {
-    if account.owner != inco_program_id {
-        return Err(ZurpayError::InvalidIncoAccountOwner.into());
-    }
-    Ok(())
-}
-
-const MAX_REMAINING_ACCOUNTS: usize = 8;
-
-fn validate_remaining_accounts<'info>(
-    remaining_accounts: &[AccountInfo<'info>],
-    inco_program_id: &Pubkey,
-) -> Result<()> {
-    require!(
-        remaining_accounts.len() <= MAX_REMAINING_ACCOUNTS,
-        ZurpayError::TooManyRemainingAccounts
-    );
-
-    for (i, acc) in remaining_accounts.iter().enumerate() {
-        if acc.owner == inco_program_id || acc.owner == &solana_program::system_program::ID {
-            continue;
-        }
-
-        if acc.executable {
-            require!(
-                acc.key == inco_program_id,
-                ZurpayError::InvalidRemainingAccount
-            );
-        }
-
-        msg!(
-            "Remaining account {}: owner={}, key={}",
-            i,
-            acc.owner,
-            acc.key
-        );
-    }
-
-    Ok(())
-}
-
+/// Execute confidential transfer using Inco Lightning CPIs
+///
+/// This performs the following FHE operations:
+/// 1. Create an encrypted handle from the ciphertext (new_euint128)
+/// 2. Subtract amount from treasury balance (e_sub)
+/// 3. Add amount to claimer balance (e_add)
+/// 4. Grant decryption permission to claimer (allow)
+///
+/// remaining_accounts layout:
+/// [0] treasury_allowance_pda (mut) - PDA for treasury's new balance
+/// [1] treasury_owner_address (readonly) - Treasury owner for allowance
+/// [2] claimer_allowance_pda (mut) - PDA for claimer's new balance  
+/// [3] claimer_owner_address (readonly) - Claimer for allowance
 fn execute_confidential_transfer<'info>(
-    inco_program: &UncheckedAccount<'info>,
-    source: &UncheckedAccount<'info>,
-    destination: &UncheckedAccount<'info>,
+    inco_program: &AccountInfo<'info>,
+    treasury_account: &AccountInfo<'info>,
+    claimer_account: &AccountInfo<'info>,
     encrypted_amount: &[u8],
     remaining_accounts: &[AccountInfo<'info>],
-    inco_program_id: &Pubkey,
+    signer: &AccountInfo<'info>,
+    system_program: &AccountInfo<'info>,
 ) -> Result<()> {
-    use solana_program::instruction::AccountMeta;
+    const INPUT_TYPE_EUINT128: u8 = 0;
+    const BALANCE_OFFSET: usize = 72;
 
-    validate_inco_account_owner(source, inco_program_id)?;
-    validate_inco_account_owner(destination, inco_program_id)?;
-    validate_remaining_accounts(remaining_accounts, inco_program_id)?;
+    let amount_handle = new_euint128(
+        CpiContext::new(
+            inco_program.clone(),
+            Operation {
+                signer: signer.clone(),
+            },
+        ),
+        encrypted_amount.to_vec(),
+        INPUT_TYPE_EUINT128,
+    )?;
 
-    let mut accounts = vec![
-        AccountMeta::new(*source.key, false),
-        AccountMeta::new(*destination.key, false),
-    ];
+    let treasury_data = treasury_account.try_borrow_data()?;
+    let treasury_balance = read_euint128_from_account(&treasury_data, BALANCE_OFFSET)?;
+    drop(treasury_data);
 
-    for (i, acc) in remaining_accounts.iter().enumerate() {
-        let is_writable = i < 2;
-        accounts.push(if is_writable {
-            AccountMeta::new(*acc.key, acc.is_signer)
-        } else {
-            AccountMeta::new_readonly(*acc.key, acc.is_signer)
-        });
+    let claimer_data = claimer_account.try_borrow_data()?;
+    let claimer_balance = read_euint128_from_account(&claimer_data, BALANCE_OFFSET)?;
+    drop(claimer_data);
+
+    let new_treasury_balance = e_sub(
+        CpiContext::new(
+            inco_program.clone(),
+            Operation {
+                signer: signer.clone(),
+            },
+        ),
+        treasury_balance,
+        amount_handle,
+        0u8,
+    )?;
+
+    let new_claimer_balance = e_add(
+        CpiContext::new(
+            inco_program.clone(),
+            Operation {
+                signer: signer.clone(),
+            },
+        ),
+        claimer_balance,
+        amount_handle,
+        0u8,
+    )?;
+
+    let mut treasury_data_mut = treasury_account.try_borrow_mut_data()?;
+    write_euint128_to_account(&mut treasury_data_mut, BALANCE_OFFSET, new_treasury_balance)?;
+    drop(treasury_data_mut);
+
+    let mut claimer_data_mut = claimer_account.try_borrow_mut_data()?;
+    write_euint128_to_account(&mut claimer_data_mut, BALANCE_OFFSET, new_claimer_balance)?;
+    drop(claimer_data_mut);
+
+    if remaining_accounts.len() >= 4 {
+        let claimer_allowance_pda = &remaining_accounts[2];
+        let claimer_owner_address = &remaining_accounts[3];
+
+        allow(
+            CpiContext::new(
+                inco_program.clone(),
+                Allow {
+                    allowance_account: claimer_allowance_pda.clone(),
+                    signer: signer.clone(),
+                    allowed_address: claimer_owner_address.clone(),
+                    system_program: system_program.clone(),
+                },
+            ),
+            new_claimer_balance.0,
+            true,
+            claimer_owner_address.key(),
+        )?;
     }
 
-    let transfer_ix = solana_program::instruction::Instruction {
-        program_id: inco_program.key(),
-        accounts,
-        data: encrypted_amount.to_vec(),
-    };
+    Ok(())
+}
 
-    let mut account_infos = vec![source.to_account_info(), destination.to_account_info()];
-    account_infos.extend(remaining_accounts.iter().cloned());
+fn read_euint128_from_account(data: &[u8], offset: usize) -> Result<Euint128> {
+    if data.len() < offset + 16 {
+        return Err(ZurpayError::InvalidAccountData.into());
+    }
 
-    invoke(&transfer_ix, &account_infos)?;
+    let mut handle_bytes = [0u8; 16];
+    handle_bytes.copy_from_slice(&data[offset..offset + 16]);
 
+    // Convert little-endian bytes to u128
+    let handle = u128::from_le_bytes(handle_bytes);
+    Ok(Euint128(handle))
+}
+
+fn write_euint128_to_account(data: &mut [u8], offset: usize, handle: Euint128) -> Result<()> {
+    if data.len() < offset + 16 {
+        return Err(ZurpayError::InvalidAccountData.into());
+    }
+
+    let handle_bytes = handle.0.to_le_bytes();
+    data[offset..offset + 16].copy_from_slice(&handle_bytes);
     Ok(())
 }
 

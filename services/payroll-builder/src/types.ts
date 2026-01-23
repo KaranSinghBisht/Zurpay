@@ -56,21 +56,21 @@ export interface PayrunRecord {
  * IMPORTANT: Does NOT contain employee_secret or plaintext salary.
  */
 export interface ClaimPackageV2 {
-  version: 'v2';
-  orgIdHex: string;              // 32 bytes hex
-  payrunIdHex: string;           // 32 bytes hex
-  claimerConfAccount: string;    // base58 pubkey
-  treasuryConfAccount?: string;  // base58 pubkey (optional for demo/UX)
-  zkVerifierProgramId?: string;  // base58 pubkey (optional)
-  incoProgramId?: string;        // base58 pubkey (optional)
-  proofB64: string;              // base64 proof bytes
-  publicInputsB64: string;       // base64 (exactly 192 bytes)
-  encryptedAmountB64: string;    // base64 ciphertext
-  payoutPubkeyHashHex: string;   // 32 bytes hex
-  ciphertextHashHex: string;     // 32 bytes hex
-  nullifierHex: string;          // 32 bytes hex
-  salaryCommitmentHex: string;   // 32 bytes hex
-  merkleRootHex: string;         // 32 bytes hex
+  version: 'v2' | 'v3' | 'v4';
+  orgIdHex: string;
+  payrunIdHex: string;
+  claimerConfAccount: string;
+  treasuryConfAccount?: string;
+  zkVerifierProgramId?: string;
+  incoProgramId?: string;
+  proofB64: string;
+  publicInputsB64: string;
+  encryptedAmountB64: string;
+  payoutPubkeyHashHex: string;
+  ciphertextHashHex: string;
+  nullifierHex: string;
+  salaryCommitmentHex: string;
+  merkleRootHex: string;
 }
 
 /**
@@ -79,21 +79,21 @@ export interface ClaimPackageV2 {
  * If employeeCommitmentHex is provided, employeeSecretHex must be provided as well.
  */
 export interface EmployeeEntryV2 {
-  employeeWallet: string;           // base58 - for record keeping only
-  claimerConfAccount: string;       // base58 - the payout confidential account pubkey
-  employeeSecretHex?: string;       // 32 bytes hex (optional override)
-  employeeCommitmentHex?: string;   // 32 bytes hex (optional verification)
-  salaryCommitmentHex: string;      // 32 bytes hex
-  encryptedAmountB64: string;       // ciphertext bytes, base64
+  employeeWallet: string; // base58 - for record keeping only
+  claimerConfAccount: string; // base58 - the payout confidential account pubkey
+  employeeSecretHex?: string; // 32 bytes hex (optional override)
+  employeeCommitmentHex?: string; // 32 bytes hex (optional verification)
+  salaryCommitmentHex: string; // 32 bytes hex
+  encryptedAmountB64: string; // ciphertext bytes, base64
 }
 
 /**
  * Request body for POST /api/payruns/create
  */
 export interface CreatePayrunRequestV2 {
-  orgIdHex: string;              // 32 bytes hex
-  payrunIdHex: string;           // 32 bytes hex
-  claimDeadlineUnix: number;     // Unix timestamp
+  orgIdHex: string; // 32 bytes hex
+  payrunIdHex: string; // 32 bytes hex
+  claimDeadlineUnix: number; // Unix timestamp
   employees: EmployeeEntryV2[];
 }
 
@@ -101,14 +101,16 @@ export const CreatePayrunRequestV2Schema = z.object({
   orgIdHex: z.string().length(64),
   payrunIdHex: z.string().length(64),
   claimDeadlineUnix: z.number(),
-  employees: z.array(z.object({
-    employeeWallet: z.string(),
-    claimerConfAccount: z.string(),
-    employeeSecretHex: z.string().length(64).optional(),
-    employeeCommitmentHex: z.string().length(64).optional(),
-    salaryCommitmentHex: z.string().length(64),
-    encryptedAmountB64: z.string(),
-  })),
+  employees: z.array(
+    z.object({
+      employeeWallet: z.string(),
+      claimerConfAccount: z.string(),
+      employeeSecretHex: z.string().length(64).optional(),
+      employeeCommitmentHex: z.string().length(64).optional(),
+      salaryCommitmentHex: z.string().length(64),
+      encryptedAmountB64: z.string(),
+    })
+  ),
 });
 
 /**
@@ -117,7 +119,7 @@ export const CreatePayrunRequestV2Schema = z.object({
 export interface ClaimLinkInfo {
   claimerConfAccount: string;
   token: string;
-  urlPath: string;  // e.g. /claims/{payrunId}?token=...
+  urlPath: string; // e.g. /claims/{payrunId}?token=...
 }
 
 /**

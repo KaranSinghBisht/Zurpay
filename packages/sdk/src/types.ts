@@ -87,21 +87,21 @@ export interface EncryptedAmount {
  * IMPORTANT: Does NOT contain employee_secret or plaintext salary.
  */
 export interface ClaimPackageV2 {
-  version: 'v2' | 'v3';
-  orgIdHex: string; // 32 bytes hex
-  payrunIdHex: string; // 32 bytes hex
-  claimerConfAccount: string; // base58 pubkey
-  treasuryConfAccount?: string; // base58 pubkey (optional for demo/UX)
-  zkVerifierProgramId?: string; // base58 pubkey (optional)
-  incoProgramId?: string; // base58 pubkey (optional)
-  proofB64: string; // base64 proof bytes
-  publicInputsB64: string; // base64 (exactly 192 bytes)
-  encryptedAmountB64: string; // base64 ciphertext
-  payoutPubkeyHashHex: string; // 32 bytes hex
-  ciphertextHashHex: string; // 32 bytes hex
-  nullifierHex: string; // 32 bytes hex
-  salaryCommitmentHex: string; // 32 bytes hex
-  merkleRootHex: string; // 32 bytes hex
+  version: 'v2' | 'v3' | 'v4';
+  orgIdHex: string;
+  payrunIdHex: string;
+  claimerConfAccount: string;
+  treasuryConfAccount?: string;
+  zkVerifierProgramId?: string;
+  incoProgramId?: string;
+  proofB64: string;
+  publicInputsB64: string;
+  encryptedAmountB64: string;
+  payoutPubkeyHashHex: string;
+  ciphertextHashHex: string;
+  nullifierHex: string;
+  salaryCommitmentHex: string;
+  merkleRootHex: string;
 }
 
 /**

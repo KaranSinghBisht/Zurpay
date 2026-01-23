@@ -12,8 +12,15 @@ import { decryptToken, encryptAmountForInco, encryptToken, hashToken } from '../
 
 const router = Router();
 
-const SOLANA_RPC_URL = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
-const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
+function getSolanaRpcUrl(): string {
+  const heliusApiKey = process.env.HELIUS_API_KEY;
+  if (heliusApiKey) {
+    return `https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+  }
+  return process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+}
+
+const connection = new Connection(getSolanaRpcUrl(), 'confirmed');
 
 async function verifyTxSigner(txSignature: string, wallet: string): Promise<boolean> {
   try {
@@ -117,7 +124,7 @@ router.post(
       const amountBigInt = BigInt(data.amount);
       const blinding = randomBytes(32);
       const salaryCommitment = computeSalaryCommitment(amountBigInt, new Uint8Array(blinding));
-      const encryptedAmount = encryptAmountForInco(amountBigInt);
+      const encryptedAmount = await encryptAmountForInco(amountBigInt);
       const ciphertextHash = computeCiphertextHash(encryptedAmount);
       const token = bytesToHex(randomBytes(32));
       const tokenHash = hashToken(token);

@@ -95,8 +95,7 @@ export class SunspotCliProver implements Prover {
     }
   }
 
-  private computePublicInputsHash(inputs: WitnessInputs): number[] {
-    // Compute sha256(merkle_root || nullifier || payout_pubkey_hash || org_id || salary_commitment || ciphertext_hash)
+  private computePublicInputsHashBytes(inputs: WitnessInputs): Buffer {
     const combined = Buffer.concat([
       Buffer.from(inputs.merkle_root),
       Buffer.from(inputs.nullifier),
@@ -105,16 +104,23 @@ export class SunspotCliProver implements Prover {
       Buffer.from(inputs.salary_commitment),
       Buffer.from(inputs.ciphertext_hash),
     ]);
-    const hash = createHash('sha256').update(combined).digest();
-    return Array.from(hash);
+    return createHash('sha256').update(combined).digest();
+  }
+
+  private bytes31ToFieldString(bytes: Buffer): string {
+    let result = BigInt(0);
+    for (let i = 1; i < bytes.length; i++) {
+      result = result * 256n + BigInt(bytes[i]);
+    }
+    return result.toString();
   }
 
   private formatProverToml(inputs: WitnessInputs): string {
     const lines: string[] = [];
 
-    // Compute and add public_inputs_hash (the only public input in v3)
-    const publicInputsHash = this.computePublicInputsHash(inputs);
-    lines.push(`public_inputs_hash = ${this.formatByteArray(publicInputsHash)}`);
+    const publicInputsHashBytes = this.computePublicInputsHashBytes(inputs);
+    const publicInputsHashField = this.bytes31ToFieldString(publicInputsHashBytes);
+    lines.push(`public_inputs_hash = "${publicInputsHashField}"`);
 
     // All former public inputs are now private
     lines.push(`merkle_root = ${this.formatByteArray(inputs.merkle_root)}`);
@@ -145,8 +151,8 @@ export class SunspotCliProver implements Prover {
   }
 
   private extractPublicInputs(publicWitness: Uint8Array, inputs: WitnessInputs): Uint8Array {
-    const publicInputsHash = this.computePublicInputsHash(inputs);
-    return new Uint8Array(publicInputsHash);
+    const publicInputsHashBytes = this.computePublicInputsHashBytes(inputs);
+    return new Uint8Array(publicInputsHashBytes);
   }
 
   private runCommand(bin: string, args: string[], cwd: string): Promise<void> {
@@ -202,13 +208,13 @@ export class MockProver implements Prover {
       proofBytes[i] = (i * 7 + 13) % 256;
     }
 
-    const publicInputsHash = this.computePublicInputsHash(inputs);
-    const publicInputsBytes = new Uint8Array(publicInputsHash);
+    const publicInputsHashBytes = this.computePublicInputsHashBytes(inputs);
+    const publicInputsBytes = new Uint8Array(publicInputsHashBytes);
 
     return { proofBytes, publicInputsBytes };
   }
 
-  private computePublicInputsHash(inputs: WitnessInputs): number[] {
+  private computePublicInputsHashBytes(inputs: WitnessInputs): Buffer {
     const combined = Buffer.concat([
       Buffer.from(inputs.merkle_root),
       Buffer.from(inputs.nullifier),
@@ -217,8 +223,7 @@ export class MockProver implements Prover {
       Buffer.from(inputs.salary_commitment),
       Buffer.from(inputs.ciphertext_hash),
     ]);
-    const hash = createHash('sha256').update(combined).digest();
-    return Array.from(hash);
+    return createHash('sha256').update(combined).digest();
   }
 }
 

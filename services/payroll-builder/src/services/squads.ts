@@ -31,9 +31,16 @@ export interface ProposalInfo {
   rejections: string[];
 }
 
+function getSolanaRpcUrl(): string {
+  const heliusApiKey = process.env.HELIUS_API_KEY;
+  if (heliusApiKey) {
+    return `https://devnet.helius-rpc.com/?api-key=${heliusApiKey}`;
+  }
+  return process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+}
+
 function getConnection(): Connection {
-  const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
-  return new Connection(rpcUrl, 'confirmed');
+  return new Connection(getSolanaRpcUrl(), 'confirmed');
 }
 
 function getPermissions(perm: MultisigMember['permissions']): multisig.types.Permissions {

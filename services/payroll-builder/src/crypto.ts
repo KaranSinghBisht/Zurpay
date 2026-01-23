@@ -1,4 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes } from 'crypto';
+import { encryptValue } from '@inco/solana-sdk/encryption';
+import { hexToBuffer } from '@inco/solana-sdk/utils';
 
 let cachedKey: Buffer | null = null;
 
@@ -48,22 +50,9 @@ function getEncryptionKey(): Buffer {
   return cachedKey;
 }
 
-function amountToBytes(amount: bigint): Uint8Array {
-  const amountBytes = new Uint8Array(32);
-  let val = amount;
-  for (let i = 31; i >= 0; i--) {
-    amountBytes[i] = Number(val & 0xffn);
-    val >>= 8n;
-  }
-  return amountBytes;
-}
-
-export function encryptAmountForInco(amount: bigint): Uint8Array {
-  const key = getEncryptionKey();
-  const nonce = randomBytes(16);
-  const amountBytes = amountToBytes(amount);
-
-  return new Uint8Array(createHmac('sha256', key).update(nonce).update(amountBytes).digest());
+export async function encryptAmountForInco(amount: bigint): Promise<Uint8Array> {
+  const encryptedHex = await encryptValue(amount);
+  return new Uint8Array(hexToBuffer(encryptedHex));
 }
 
 export function hashToken(token: string): string {
