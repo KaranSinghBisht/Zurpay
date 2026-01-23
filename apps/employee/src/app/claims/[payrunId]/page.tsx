@@ -14,6 +14,7 @@ import {
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
 } from '@zurpay/sdk';
 import { ConfettiCelebration } from '../../../components/ConfettiCelebration';
+import { BalanceViewer } from '../../../components/BalanceViewer';
 import { employeeApi } from '../../../lib/api';
 
 type ClaimStatus =
@@ -266,6 +267,18 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
                 Your salary has been claimed successfully. The funds will appear in your
                 confidential account.
               </p>
+
+              {claimPackage?.encryptedAmountB64 && (
+                <div className="mb-4">
+                  <BalanceViewer
+                    encryptedHandle={claimPackage.encryptedAmountB64}
+                    label="Claimed Amount"
+                    decimals={6}
+                    tokenSymbol="USDC"
+                  />
+                </div>
+              )}
+
               <div className="p-3 bg-zinc-900/50 rounded-lg">
                 <p className="text-xs text-zinc-400 mb-1">Transaction Signature</p>
                 <a

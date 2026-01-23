@@ -13,6 +13,7 @@ import {
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
 } from '@zurpay/sdk';
 import { ConfettiCelebration } from '../../../components/ConfettiCelebration';
+import { BalanceViewer } from '../../../components/BalanceViewer';
 import { employeeApi, PaylinkInfo } from '../../../lib/api';
 
 export default function PaylinkClaimPage() {
@@ -213,21 +214,35 @@ export default function PaylinkClaimPage() {
       <>
         <ConfettiCelebration isActive={true} />
         <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="glass-card rounded-xl p-8 max-w-md w-full text-center">
-            <div className="text-5xl mb-4">🎉</div>
-            <h1 className="text-2xl font-bold mb-2 text-emerald-400">Payment Claimed!</h1>
-            <p className="text-zinc-400 mb-6">
-              You have successfully claimed {paylinkInfo?.amountDisplay}
-            </p>
+          <div className="glass-card rounded-xl p-8 max-w-md w-full">
+            <div className="text-center mb-6">
+              <div className="text-5xl mb-4">🎉</div>
+              <h1 className="text-2xl font-bold mb-2 text-emerald-400">Payment Claimed!</h1>
+              <p className="text-zinc-400">Your confidential payment has been received</p>
+            </div>
+
+            {claimPackage?.encryptedAmountB64 && (
+              <div className="mb-6">
+                <BalanceViewer
+                  encryptedHandle={claimPackage.encryptedAmountB64}
+                  label="Received Amount"
+                  decimals={6}
+                  tokenSymbol="USDC"
+                />
+              </div>
+            )}
+
             {txSig && (
-              <a
-                href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-emerald-400 hover:underline text-sm"
-              >
-                View Transaction
-              </a>
+              <div className="text-center">
+                <a
+                  href={`https://explorer.solana.com/tx/${txSig}?cluster=devnet`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-400 hover:underline text-sm"
+                >
+                  View Transaction on Solana Explorer
+                </a>
+              </div>
             )}
           </div>
         </div>

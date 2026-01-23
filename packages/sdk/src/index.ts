@@ -4,3 +4,4 @@ export * from './constants';
 export * from './utils';
 export * from './claim';
 export * from './transport';
+export * from './decrypt';
