@@ -59,19 +59,6 @@ function validateBase64Field(
   }
 }
 
-function validatePubkeyField(value: string | undefined, fieldName: string): PublicKey {
-  if (!value) {
-    throw new Error(`ClaimPackage validation failed: ${fieldName} is missing`);
-  }
-  try {
-    return new PublicKey(value);
-  } catch (e) {
-    throw new Error(
-      `ClaimPackage validation failed: ${fieldName} is not a valid base58 pubkey: "${value}"`
-    );
-  }
-}
-
 export function validateClaimPackage(claimPackage: ClaimPackageV2): {
   orgId: Uint8Array;
   payrunId: Uint8Array;
@@ -86,12 +73,13 @@ export function validateClaimPackage(claimPackage: ClaimPackageV2): {
   validateHexField(claimPackage.orgIdHex, 'orgIdHex', 32);
   validateHexField(claimPackage.payrunIdHex, 'payrunIdHex', 32);
   validateHexField(claimPackage.nullifierHex, 'nullifierHex', 32);
-  validateHexField(claimPackage.payoutPubkeyHashHex, 'payoutPubkeyHashHex', 32);
   validateHexField(claimPackage.salaryCommitmentHex, 'salaryCommitmentHex', 32);
   validateHexField(claimPackage.ciphertextHashHex, 'ciphertextHashHex', 32);
   validateHexField(claimPackage.merkleRootHex, 'merkleRootHex', 32);
 
-  validatePubkeyField(claimPackage.claimerConfAccount, 'claimerConfAccount');
+  if (claimPackage.payoutPubkeyHashHex) {
+    validateHexField(claimPackage.payoutPubkeyHashHex, 'payoutPubkeyHashHex', 32);
+  }
 
   const proofBytes = validateBase64Field(claimPackage.proofB64, 'proofB64', 100);
   const publicInputsBytes = validateBase64Field(
@@ -121,7 +109,9 @@ export function validateClaimPackage(claimPackage: ClaimPackageV2): {
     orgId: hexToBytes(claimPackage.orgIdHex),
     payrunId: hexToBytes(claimPackage.payrunIdHex),
     nullifierHash: hexToBytes(claimPackage.nullifierHex),
-    payoutPubkeyHash: hexToBytes(claimPackage.payoutPubkeyHashHex),
+    payoutPubkeyHash: claimPackage.payoutPubkeyHashHex
+      ? hexToBytes(claimPackage.payoutPubkeyHashHex)
+      : new Uint8Array(32),
     salaryCommitment: hexToBytes(claimPackage.salaryCommitmentHex),
     ciphertextHash: hexToBytes(claimPackage.ciphertextHashHex),
     proofBytes,
@@ -264,10 +254,12 @@ export async function submitClaimFromPackage(
   incoAllowanceAccounts?: IncoAllowanceAccounts,
   schemaVersion: number = 5
 ): Promise<string> {
-  if (!verifyClaimerMatch(accounts.claimerConfAccount, claimPackage)) {
-    throw new Error(
-      'Claimer confidential account does not match payout_pubkey_hash. This claim is not for your account.'
-    );
+  if (claimPackage.payoutPubkeyHashHex) {
+    if (!verifyClaimerMatch(accounts.claimerConfAccount, claimPackage)) {
+      throw new Error(
+        'Claimer confidential account does not match payout_pubkey_hash. This claim is not for your account.'
+      );
+    }
   }
 
   const instruction = buildClaimInstruction(
