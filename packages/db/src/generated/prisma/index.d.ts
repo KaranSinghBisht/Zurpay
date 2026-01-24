@@ -29,6 +29,11 @@ export type OrgMember = $Result.DefaultSelection<Prisma.$OrgMemberPayload>
  */
 export type Worker = $Result.DefaultSelection<Prisma.$WorkerPayload>
 /**
+ * Model WorkerInvite
+ * 
+ */
+export type WorkerInvite = $Result.DefaultSelection<Prisma.$WorkerInvitePayload>
+/**
  * Model CompPlan
  * 
  */
@@ -129,6 +134,7 @@ export type WorkerType = (typeof WorkerType)[keyof typeof WorkerType]
 
 
 export const WorkerStatus: {
+  INVITED: 'INVITED',
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE'
 };
@@ -469,6 +475,16 @@ export class PrismaClient<
     * ```
     */
   get worker(): Prisma.WorkerDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.workerInvite`: Exposes CRUD operations for the **WorkerInvite** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more WorkerInvites
+    * const workerInvites = await prisma.workerInvite.findMany()
+    * ```
+    */
+  get workerInvite(): Prisma.WorkerInviteDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.compPlan`: Exposes CRUD operations for the **CompPlan** model.
@@ -1063,6 +1079,7 @@ export namespace Prisma {
     Org: 'Org',
     OrgMember: 'OrgMember',
     Worker: 'Worker',
+    WorkerInvite: 'WorkerInvite',
     CompPlan: 'CompPlan',
     Payrun: 'Payrun',
     Payslip: 'Payslip',
@@ -1096,7 +1113,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "org" | "orgMember" | "worker" | "compPlan" | "payrun" | "payslip" | "paylink" | "ledgerEntry" | "auditLog" | "session" | "siwsNonce" | "claimToken" | "idempotencyKey" | "multisigProposal" | "approvalRequest" | "recurringSchedule" | "legacyPayrun" | "legacyClaimPackage"
+      modelProps: "org" | "orgMember" | "worker" | "workerInvite" | "compPlan" | "payrun" | "payslip" | "paylink" | "ledgerEntry" | "auditLog" | "session" | "siwsNonce" | "claimToken" | "idempotencyKey" | "multisigProposal" | "approvalRequest" | "recurringSchedule" | "legacyPayrun" | "legacyClaimPackage"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1319,6 +1336,80 @@ export namespace Prisma {
           count: {
             args: Prisma.WorkerCountArgs<ExtArgs>
             result: $Utils.Optional<WorkerCountAggregateOutputType> | number
+          }
+        }
+      }
+      WorkerInvite: {
+        payload: Prisma.$WorkerInvitePayload<ExtArgs>
+        fields: Prisma.WorkerInviteFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.WorkerInviteFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.WorkerInviteFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>
+          }
+          findFirst: {
+            args: Prisma.WorkerInviteFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.WorkerInviteFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>
+          }
+          findMany: {
+            args: Prisma.WorkerInviteFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>[]
+          }
+          create: {
+            args: Prisma.WorkerInviteCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>
+          }
+          createMany: {
+            args: Prisma.WorkerInviteCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.WorkerInviteCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>[]
+          }
+          delete: {
+            args: Prisma.WorkerInviteDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>
+          }
+          update: {
+            args: Prisma.WorkerInviteUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>
+          }
+          deleteMany: {
+            args: Prisma.WorkerInviteDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.WorkerInviteUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.WorkerInviteUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>[]
+          }
+          upsert: {
+            args: Prisma.WorkerInviteUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkerInvitePayload>
+          }
+          aggregate: {
+            args: Prisma.WorkerInviteAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateWorkerInvite>
+          }
+          groupBy: {
+            args: Prisma.WorkerInviteGroupByArgs<ExtArgs>
+            result: $Utils.Optional<WorkerInviteGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.WorkerInviteCountArgs<ExtArgs>
+            result: $Utils.Optional<WorkerInviteCountAggregateOutputType> | number
           }
         }
       }
@@ -2531,6 +2622,7 @@ export namespace Prisma {
     org?: OrgOmit
     orgMember?: OrgMemberOmit
     worker?: WorkerOmit
+    workerInvite?: WorkerInviteOmit
     compPlan?: CompPlanOmit
     payrun?: PayrunOmit
     payslip?: PayslipOmit
@@ -5397,12 +5489,12 @@ export namespace Prisma {
   export type WorkerMinAggregateOutputType = {
     id: string | null
     orgId: string | null
+    email: string | null
+    googleId: string | null
     wallet: string | null
-    claimerConfAccount: string | null
     type: $Enums.WorkerType | null
     status: $Enums.WorkerStatus | null
     displayName: string | null
-    email: string | null
     externalId: string | null
     startDate: Date | null
     endDate: Date | null
@@ -5414,12 +5506,12 @@ export namespace Prisma {
   export type WorkerMaxAggregateOutputType = {
     id: string | null
     orgId: string | null
+    email: string | null
+    googleId: string | null
     wallet: string | null
-    claimerConfAccount: string | null
     type: $Enums.WorkerType | null
     status: $Enums.WorkerStatus | null
     displayName: string | null
-    email: string | null
     externalId: string | null
     startDate: Date | null
     endDate: Date | null
@@ -5431,12 +5523,12 @@ export namespace Prisma {
   export type WorkerCountAggregateOutputType = {
     id: number
     orgId: number
+    email: number
+    googleId: number
     wallet: number
-    claimerConfAccount: number
     type: number
     status: number
     displayName: number
-    email: number
     externalId: number
     startDate: number
     endDate: number
@@ -5450,12 +5542,12 @@ export namespace Prisma {
   export type WorkerMinAggregateInputType = {
     id?: true
     orgId?: true
+    email?: true
+    googleId?: true
     wallet?: true
-    claimerConfAccount?: true
     type?: true
     status?: true
     displayName?: true
-    email?: true
     externalId?: true
     startDate?: true
     endDate?: true
@@ -5467,12 +5559,12 @@ export namespace Prisma {
   export type WorkerMaxAggregateInputType = {
     id?: true
     orgId?: true
+    email?: true
+    googleId?: true
     wallet?: true
-    claimerConfAccount?: true
     type?: true
     status?: true
     displayName?: true
-    email?: true
     externalId?: true
     startDate?: true
     endDate?: true
@@ -5484,12 +5576,12 @@ export namespace Prisma {
   export type WorkerCountAggregateInputType = {
     id?: true
     orgId?: true
+    email?: true
+    googleId?: true
     wallet?: true
-    claimerConfAccount?: true
     type?: true
     status?: true
     displayName?: true
-    email?: true
     externalId?: true
     startDate?: true
     endDate?: true
@@ -5574,12 +5666,12 @@ export namespace Prisma {
   export type WorkerGroupByOutputType = {
     id: string
     orgId: string
-    wallet: string
-    claimerConfAccount: string | null
+    email: string | null
+    googleId: string | null
+    wallet: string | null
     type: $Enums.WorkerType
     status: $Enums.WorkerStatus
     displayName: string | null
-    email: string | null
     externalId: string | null
     startDate: Date | null
     endDate: Date | null
@@ -5608,12 +5700,12 @@ export namespace Prisma {
   export type WorkerSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     orgId?: boolean
+    email?: boolean
+    googleId?: boolean
     wallet?: boolean
-    claimerConfAccount?: boolean
     type?: boolean
     status?: boolean
     displayName?: boolean
-    email?: boolean
     externalId?: boolean
     startDate?: boolean
     endDate?: boolean
@@ -5623,18 +5715,19 @@ export namespace Prisma {
     org?: boolean | OrgDefaultArgs<ExtArgs>
     compPlans?: boolean | Worker$compPlansArgs<ExtArgs>
     payslips?: boolean | Worker$payslipsArgs<ExtArgs>
+    invite?: boolean | Worker$inviteArgs<ExtArgs>
     _count?: boolean | WorkerCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["worker"]>
 
   export type WorkerSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     orgId?: boolean
+    email?: boolean
+    googleId?: boolean
     wallet?: boolean
-    claimerConfAccount?: boolean
     type?: boolean
     status?: boolean
     displayName?: boolean
-    email?: boolean
     externalId?: boolean
     startDate?: boolean
     endDate?: boolean
@@ -5647,12 +5740,12 @@ export namespace Prisma {
   export type WorkerSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     orgId?: boolean
+    email?: boolean
+    googleId?: boolean
     wallet?: boolean
-    claimerConfAccount?: boolean
     type?: boolean
     status?: boolean
     displayName?: boolean
-    email?: boolean
     externalId?: boolean
     startDate?: boolean
     endDate?: boolean
@@ -5665,12 +5758,12 @@ export namespace Prisma {
   export type WorkerSelectScalar = {
     id?: boolean
     orgId?: boolean
+    email?: boolean
+    googleId?: boolean
     wallet?: boolean
-    claimerConfAccount?: boolean
     type?: boolean
     status?: boolean
     displayName?: boolean
-    email?: boolean
     externalId?: boolean
     startDate?: boolean
     endDate?: boolean
@@ -5679,11 +5772,12 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type WorkerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orgId" | "wallet" | "claimerConfAccount" | "type" | "status" | "displayName" | "email" | "externalId" | "startDate" | "endDate" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["worker"]>
+  export type WorkerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orgId" | "email" | "googleId" | "wallet" | "type" | "status" | "displayName" | "externalId" | "startDate" | "endDate" | "metadata" | "createdAt" | "updatedAt", ExtArgs["result"]["worker"]>
   export type WorkerInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     org?: boolean | OrgDefaultArgs<ExtArgs>
     compPlans?: boolean | Worker$compPlansArgs<ExtArgs>
     payslips?: boolean | Worker$payslipsArgs<ExtArgs>
+    invite?: boolean | Worker$inviteArgs<ExtArgs>
     _count?: boolean | WorkerCountOutputTypeDefaultArgs<ExtArgs>
   }
   export type WorkerIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -5699,16 +5793,17 @@ export namespace Prisma {
       org: Prisma.$OrgPayload<ExtArgs>
       compPlans: Prisma.$CompPlanPayload<ExtArgs>[]
       payslips: Prisma.$PayslipPayload<ExtArgs>[]
+      invite: Prisma.$WorkerInvitePayload<ExtArgs> | null
     }
     scalars: $Extensions.GetPayloadResult<{
       id: string
       orgId: string
-      wallet: string
-      claimerConfAccount: string | null
+      email: string | null
+      googleId: string | null
+      wallet: string | null
       type: $Enums.WorkerType
       status: $Enums.WorkerStatus
       displayName: string | null
-      email: string | null
       externalId: string | null
       startDate: Date | null
       endDate: Date | null
@@ -6112,6 +6207,7 @@ export namespace Prisma {
     org<T extends OrgDefaultArgs<ExtArgs> = {}>(args?: Subset<T, OrgDefaultArgs<ExtArgs>>): Prisma__OrgClient<$Result.GetResult<Prisma.$OrgPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     compPlans<T extends Worker$compPlansArgs<ExtArgs> = {}>(args?: Subset<T, Worker$compPlansArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$CompPlanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     payslips<T extends Worker$payslipsArgs<ExtArgs> = {}>(args?: Subset<T, Worker$payslipsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PayslipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    invite<T extends Worker$inviteArgs<ExtArgs> = {}>(args?: Subset<T, Worker$inviteArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     /**
      * Attaches callbacks for the resolution and/or rejection of the Promise.
      * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6143,12 +6239,12 @@ export namespace Prisma {
   interface WorkerFieldRefs {
     readonly id: FieldRef<"Worker", 'String'>
     readonly orgId: FieldRef<"Worker", 'String'>
+    readonly email: FieldRef<"Worker", 'String'>
+    readonly googleId: FieldRef<"Worker", 'String'>
     readonly wallet: FieldRef<"Worker", 'String'>
-    readonly claimerConfAccount: FieldRef<"Worker", 'String'>
     readonly type: FieldRef<"Worker", 'WorkerType'>
     readonly status: FieldRef<"Worker", 'WorkerStatus'>
     readonly displayName: FieldRef<"Worker", 'String'>
-    readonly email: FieldRef<"Worker", 'String'>
     readonly externalId: FieldRef<"Worker", 'String'>
     readonly startDate: FieldRef<"Worker", 'DateTime'>
     readonly endDate: FieldRef<"Worker", 'DateTime'>
@@ -6599,6 +6695,25 @@ export namespace Prisma {
   }
 
   /**
+   * Worker.invite
+   */
+  export type Worker$inviteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    where?: WorkerInviteWhereInput
+  }
+
+  /**
    * Worker without action
    */
   export type WorkerDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6614,6 +6729,1090 @@ export namespace Prisma {
      * Choose, which related nodes to fetch as well
      */
     include?: WorkerInclude<ExtArgs> | null
+  }
+
+
+  /**
+   * Model WorkerInvite
+   */
+
+  export type AggregateWorkerInvite = {
+    _count: WorkerInviteCountAggregateOutputType | null
+    _min: WorkerInviteMinAggregateOutputType | null
+    _max: WorkerInviteMaxAggregateOutputType | null
+  }
+
+  export type WorkerInviteMinAggregateOutputType = {
+    id: string | null
+    workerId: string | null
+    token: string | null
+    expiresAt: Date | null
+    acceptedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type WorkerInviteMaxAggregateOutputType = {
+    id: string | null
+    workerId: string | null
+    token: string | null
+    expiresAt: Date | null
+    acceptedAt: Date | null
+    createdAt: Date | null
+    updatedAt: Date | null
+  }
+
+  export type WorkerInviteCountAggregateOutputType = {
+    id: number
+    workerId: number
+    token: number
+    expiresAt: number
+    acceptedAt: number
+    createdAt: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type WorkerInviteMinAggregateInputType = {
+    id?: true
+    workerId?: true
+    token?: true
+    expiresAt?: true
+    acceptedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type WorkerInviteMaxAggregateInputType = {
+    id?: true
+    workerId?: true
+    token?: true
+    expiresAt?: true
+    acceptedAt?: true
+    createdAt?: true
+    updatedAt?: true
+  }
+
+  export type WorkerInviteCountAggregateInputType = {
+    id?: true
+    workerId?: true
+    token?: true
+    expiresAt?: true
+    acceptedAt?: true
+    createdAt?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type WorkerInviteAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which WorkerInvite to aggregate.
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkerInvites to fetch.
+     */
+    orderBy?: WorkerInviteOrderByWithRelationInput | WorkerInviteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: WorkerInviteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkerInvites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkerInvites.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned WorkerInvites
+    **/
+    _count?: true | WorkerInviteCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: WorkerInviteMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: WorkerInviteMaxAggregateInputType
+  }
+
+  export type GetWorkerInviteAggregateType<T extends WorkerInviteAggregateArgs> = {
+        [P in keyof T & keyof AggregateWorkerInvite]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateWorkerInvite[P]>
+      : GetScalarType<T[P], AggregateWorkerInvite[P]>
+  }
+
+
+
+
+  export type WorkerInviteGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: WorkerInviteWhereInput
+    orderBy?: WorkerInviteOrderByWithAggregationInput | WorkerInviteOrderByWithAggregationInput[]
+    by: WorkerInviteScalarFieldEnum[] | WorkerInviteScalarFieldEnum
+    having?: WorkerInviteScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: WorkerInviteCountAggregateInputType | true
+    _min?: WorkerInviteMinAggregateInputType
+    _max?: WorkerInviteMaxAggregateInputType
+  }
+
+  export type WorkerInviteGroupByOutputType = {
+    id: string
+    workerId: string
+    token: string
+    expiresAt: Date
+    acceptedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+    _count: WorkerInviteCountAggregateOutputType | null
+    _min: WorkerInviteMinAggregateOutputType | null
+    _max: WorkerInviteMaxAggregateOutputType | null
+  }
+
+  type GetWorkerInviteGroupByPayload<T extends WorkerInviteGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<WorkerInviteGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof WorkerInviteGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], WorkerInviteGroupByOutputType[P]>
+            : GetScalarType<T[P], WorkerInviteGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type WorkerInviteSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    workerId?: boolean
+    token?: boolean
+    expiresAt?: boolean
+    acceptedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    worker?: boolean | WorkerDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["workerInvite"]>
+
+  export type WorkerInviteSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    workerId?: boolean
+    token?: boolean
+    expiresAt?: boolean
+    acceptedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    worker?: boolean | WorkerDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["workerInvite"]>
+
+  export type WorkerInviteSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    workerId?: boolean
+    token?: boolean
+    expiresAt?: boolean
+    acceptedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+    worker?: boolean | WorkerDefaultArgs<ExtArgs>
+  }, ExtArgs["result"]["workerInvite"]>
+
+  export type WorkerInviteSelectScalar = {
+    id?: boolean
+    workerId?: boolean
+    token?: boolean
+    expiresAt?: boolean
+    acceptedAt?: boolean
+    createdAt?: boolean
+    updatedAt?: boolean
+  }
+
+  export type WorkerInviteOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "workerId" | "token" | "expiresAt" | "acceptedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["workerInvite"]>
+  export type WorkerInviteInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    worker?: boolean | WorkerDefaultArgs<ExtArgs>
+  }
+  export type WorkerInviteIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    worker?: boolean | WorkerDefaultArgs<ExtArgs>
+  }
+  export type WorkerInviteIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    worker?: boolean | WorkerDefaultArgs<ExtArgs>
+  }
+
+  export type $WorkerInvitePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "WorkerInvite"
+    objects: {
+      worker: Prisma.$WorkerPayload<ExtArgs>
+    }
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      workerId: string
+      token: string
+      expiresAt: Date
+      acceptedAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }, ExtArgs["result"]["workerInvite"]>
+    composites: {}
+  }
+
+  type WorkerInviteGetPayload<S extends boolean | null | undefined | WorkerInviteDefaultArgs> = $Result.GetResult<Prisma.$WorkerInvitePayload, S>
+
+  type WorkerInviteCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<WorkerInviteFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: WorkerInviteCountAggregateInputType | true
+    }
+
+  export interface WorkerInviteDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['WorkerInvite'], meta: { name: 'WorkerInvite' } }
+    /**
+     * Find zero or one WorkerInvite that matches the filter.
+     * @param {WorkerInviteFindUniqueArgs} args - Arguments to find a WorkerInvite
+     * @example
+     * // Get one WorkerInvite
+     * const workerInvite = await prisma.workerInvite.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends WorkerInviteFindUniqueArgs>(args: SelectSubset<T, WorkerInviteFindUniqueArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one WorkerInvite that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {WorkerInviteFindUniqueOrThrowArgs} args - Arguments to find a WorkerInvite
+     * @example
+     * // Get one WorkerInvite
+     * const workerInvite = await prisma.workerInvite.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends WorkerInviteFindUniqueOrThrowArgs>(args: SelectSubset<T, WorkerInviteFindUniqueOrThrowArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first WorkerInvite that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteFindFirstArgs} args - Arguments to find a WorkerInvite
+     * @example
+     * // Get one WorkerInvite
+     * const workerInvite = await prisma.workerInvite.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends WorkerInviteFindFirstArgs>(args?: SelectSubset<T, WorkerInviteFindFirstArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first WorkerInvite that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteFindFirstOrThrowArgs} args - Arguments to find a WorkerInvite
+     * @example
+     * // Get one WorkerInvite
+     * const workerInvite = await prisma.workerInvite.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends WorkerInviteFindFirstOrThrowArgs>(args?: SelectSubset<T, WorkerInviteFindFirstOrThrowArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more WorkerInvites that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all WorkerInvites
+     * const workerInvites = await prisma.workerInvite.findMany()
+     * 
+     * // Get first 10 WorkerInvites
+     * const workerInvites = await prisma.workerInvite.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const workerInviteWithIdOnly = await prisma.workerInvite.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends WorkerInviteFindManyArgs>(args?: SelectSubset<T, WorkerInviteFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a WorkerInvite.
+     * @param {WorkerInviteCreateArgs} args - Arguments to create a WorkerInvite.
+     * @example
+     * // Create one WorkerInvite
+     * const WorkerInvite = await prisma.workerInvite.create({
+     *   data: {
+     *     // ... data to create a WorkerInvite
+     *   }
+     * })
+     * 
+     */
+    create<T extends WorkerInviteCreateArgs>(args: SelectSubset<T, WorkerInviteCreateArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many WorkerInvites.
+     * @param {WorkerInviteCreateManyArgs} args - Arguments to create many WorkerInvites.
+     * @example
+     * // Create many WorkerInvites
+     * const workerInvite = await prisma.workerInvite.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends WorkerInviteCreateManyArgs>(args?: SelectSubset<T, WorkerInviteCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many WorkerInvites and returns the data saved in the database.
+     * @param {WorkerInviteCreateManyAndReturnArgs} args - Arguments to create many WorkerInvites.
+     * @example
+     * // Create many WorkerInvites
+     * const workerInvite = await prisma.workerInvite.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many WorkerInvites and only return the `id`
+     * const workerInviteWithIdOnly = await prisma.workerInvite.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends WorkerInviteCreateManyAndReturnArgs>(args?: SelectSubset<T, WorkerInviteCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a WorkerInvite.
+     * @param {WorkerInviteDeleteArgs} args - Arguments to delete one WorkerInvite.
+     * @example
+     * // Delete one WorkerInvite
+     * const WorkerInvite = await prisma.workerInvite.delete({
+     *   where: {
+     *     // ... filter to delete one WorkerInvite
+     *   }
+     * })
+     * 
+     */
+    delete<T extends WorkerInviteDeleteArgs>(args: SelectSubset<T, WorkerInviteDeleteArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one WorkerInvite.
+     * @param {WorkerInviteUpdateArgs} args - Arguments to update one WorkerInvite.
+     * @example
+     * // Update one WorkerInvite
+     * const workerInvite = await prisma.workerInvite.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends WorkerInviteUpdateArgs>(args: SelectSubset<T, WorkerInviteUpdateArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more WorkerInvites.
+     * @param {WorkerInviteDeleteManyArgs} args - Arguments to filter WorkerInvites to delete.
+     * @example
+     * // Delete a few WorkerInvites
+     * const { count } = await prisma.workerInvite.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends WorkerInviteDeleteManyArgs>(args?: SelectSubset<T, WorkerInviteDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more WorkerInvites.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many WorkerInvites
+     * const workerInvite = await prisma.workerInvite.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends WorkerInviteUpdateManyArgs>(args: SelectSubset<T, WorkerInviteUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more WorkerInvites and returns the data updated in the database.
+     * @param {WorkerInviteUpdateManyAndReturnArgs} args - Arguments to update many WorkerInvites.
+     * @example
+     * // Update many WorkerInvites
+     * const workerInvite = await prisma.workerInvite.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more WorkerInvites and only return the `id`
+     * const workerInviteWithIdOnly = await prisma.workerInvite.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends WorkerInviteUpdateManyAndReturnArgs>(args: SelectSubset<T, WorkerInviteUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one WorkerInvite.
+     * @param {WorkerInviteUpsertArgs} args - Arguments to update or create a WorkerInvite.
+     * @example
+     * // Update or create a WorkerInvite
+     * const workerInvite = await prisma.workerInvite.upsert({
+     *   create: {
+     *     // ... data to create a WorkerInvite
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the WorkerInvite we want to update
+     *   }
+     * })
+     */
+    upsert<T extends WorkerInviteUpsertArgs>(args: SelectSubset<T, WorkerInviteUpsertArgs<ExtArgs>>): Prisma__WorkerInviteClient<$Result.GetResult<Prisma.$WorkerInvitePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of WorkerInvites.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteCountArgs} args - Arguments to filter WorkerInvites to count.
+     * @example
+     * // Count the number of WorkerInvites
+     * const count = await prisma.workerInvite.count({
+     *   where: {
+     *     // ... the filter for the WorkerInvites we want to count
+     *   }
+     * })
+    **/
+    count<T extends WorkerInviteCountArgs>(
+      args?: Subset<T, WorkerInviteCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], WorkerInviteCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a WorkerInvite.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends WorkerInviteAggregateArgs>(args: Subset<T, WorkerInviteAggregateArgs>): Prisma.PrismaPromise<GetWorkerInviteAggregateType<T>>
+
+    /**
+     * Group by WorkerInvite.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkerInviteGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends WorkerInviteGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: WorkerInviteGroupByArgs['orderBy'] }
+        : { orderBy?: WorkerInviteGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, WorkerInviteGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetWorkerInviteGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the WorkerInvite model
+   */
+  readonly fields: WorkerInviteFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for WorkerInvite.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__WorkerInviteClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    worker<T extends WorkerDefaultArgs<ExtArgs> = {}>(args?: Subset<T, WorkerDefaultArgs<ExtArgs>>): Prisma__WorkerClient<$Result.GetResult<Prisma.$WorkerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the WorkerInvite model
+   */
+  interface WorkerInviteFieldRefs {
+    readonly id: FieldRef<"WorkerInvite", 'String'>
+    readonly workerId: FieldRef<"WorkerInvite", 'String'>
+    readonly token: FieldRef<"WorkerInvite", 'String'>
+    readonly expiresAt: FieldRef<"WorkerInvite", 'DateTime'>
+    readonly acceptedAt: FieldRef<"WorkerInvite", 'DateTime'>
+    readonly createdAt: FieldRef<"WorkerInvite", 'DateTime'>
+    readonly updatedAt: FieldRef<"WorkerInvite", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * WorkerInvite findUnique
+   */
+  export type WorkerInviteFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * Filter, which WorkerInvite to fetch.
+     */
+    where: WorkerInviteWhereUniqueInput
+  }
+
+  /**
+   * WorkerInvite findUniqueOrThrow
+   */
+  export type WorkerInviteFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * Filter, which WorkerInvite to fetch.
+     */
+    where: WorkerInviteWhereUniqueInput
+  }
+
+  /**
+   * WorkerInvite findFirst
+   */
+  export type WorkerInviteFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * Filter, which WorkerInvite to fetch.
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkerInvites to fetch.
+     */
+    orderBy?: WorkerInviteOrderByWithRelationInput | WorkerInviteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for WorkerInvites.
+     */
+    cursor?: WorkerInviteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkerInvites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkerInvites.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WorkerInvites.
+     */
+    distinct?: WorkerInviteScalarFieldEnum | WorkerInviteScalarFieldEnum[]
+  }
+
+  /**
+   * WorkerInvite findFirstOrThrow
+   */
+  export type WorkerInviteFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * Filter, which WorkerInvite to fetch.
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkerInvites to fetch.
+     */
+    orderBy?: WorkerInviteOrderByWithRelationInput | WorkerInviteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for WorkerInvites.
+     */
+    cursor?: WorkerInviteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkerInvites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkerInvites.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WorkerInvites.
+     */
+    distinct?: WorkerInviteScalarFieldEnum | WorkerInviteScalarFieldEnum[]
+  }
+
+  /**
+   * WorkerInvite findMany
+   */
+  export type WorkerInviteFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * Filter, which WorkerInvites to fetch.
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkerInvites to fetch.
+     */
+    orderBy?: WorkerInviteOrderByWithRelationInput | WorkerInviteOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing WorkerInvites.
+     */
+    cursor?: WorkerInviteWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkerInvites from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkerInvites.
+     */
+    skip?: number
+    distinct?: WorkerInviteScalarFieldEnum | WorkerInviteScalarFieldEnum[]
+  }
+
+  /**
+   * WorkerInvite create
+   */
+  export type WorkerInviteCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * The data needed to create a WorkerInvite.
+     */
+    data: XOR<WorkerInviteCreateInput, WorkerInviteUncheckedCreateInput>
+  }
+
+  /**
+   * WorkerInvite createMany
+   */
+  export type WorkerInviteCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many WorkerInvites.
+     */
+    data: WorkerInviteCreateManyInput | WorkerInviteCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * WorkerInvite createManyAndReturn
+   */
+  export type WorkerInviteCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * The data used to create many WorkerInvites.
+     */
+    data: WorkerInviteCreateManyInput | WorkerInviteCreateManyInput[]
+    skipDuplicates?: boolean
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteIncludeCreateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * WorkerInvite update
+   */
+  export type WorkerInviteUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * The data needed to update a WorkerInvite.
+     */
+    data: XOR<WorkerInviteUpdateInput, WorkerInviteUncheckedUpdateInput>
+    /**
+     * Choose, which WorkerInvite to update.
+     */
+    where: WorkerInviteWhereUniqueInput
+  }
+
+  /**
+   * WorkerInvite updateMany
+   */
+  export type WorkerInviteUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update WorkerInvites.
+     */
+    data: XOR<WorkerInviteUpdateManyMutationInput, WorkerInviteUncheckedUpdateManyInput>
+    /**
+     * Filter which WorkerInvites to update
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * Limit how many WorkerInvites to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * WorkerInvite updateManyAndReturn
+   */
+  export type WorkerInviteUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * The data used to update WorkerInvites.
+     */
+    data: XOR<WorkerInviteUpdateManyMutationInput, WorkerInviteUncheckedUpdateManyInput>
+    /**
+     * Filter which WorkerInvites to update
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * Limit how many WorkerInvites to update.
+     */
+    limit?: number
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteIncludeUpdateManyAndReturn<ExtArgs> | null
+  }
+
+  /**
+   * WorkerInvite upsert
+   */
+  export type WorkerInviteUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * The filter to search for the WorkerInvite to update in case it exists.
+     */
+    where: WorkerInviteWhereUniqueInput
+    /**
+     * In case the WorkerInvite found by the `where` argument doesn't exist, create a new WorkerInvite with this data.
+     */
+    create: XOR<WorkerInviteCreateInput, WorkerInviteUncheckedCreateInput>
+    /**
+     * In case the WorkerInvite was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<WorkerInviteUpdateInput, WorkerInviteUncheckedUpdateInput>
+  }
+
+  /**
+   * WorkerInvite delete
+   */
+  export type WorkerInviteDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
+    /**
+     * Filter which WorkerInvite to delete.
+     */
+    where: WorkerInviteWhereUniqueInput
+  }
+
+  /**
+   * WorkerInvite deleteMany
+   */
+  export type WorkerInviteDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which WorkerInvites to delete
+     */
+    where?: WorkerInviteWhereInput
+    /**
+     * Limit how many WorkerInvites to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * WorkerInvite without action
+   */
+  export type WorkerInviteDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkerInvite
+     */
+    select?: WorkerInviteSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkerInvite
+     */
+    omit?: WorkerInviteOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: WorkerInviteInclude<ExtArgs> | null
   }
 
 
@@ -16228,8 +17427,18 @@ export namespace Prisma {
 
   export type AggregateClaimToken = {
     _count: ClaimTokenCountAggregateOutputType | null
+    _avg: ClaimTokenAvgAggregateOutputType | null
+    _sum: ClaimTokenSumAggregateOutputType | null
     _min: ClaimTokenMinAggregateOutputType | null
     _max: ClaimTokenMaxAggregateOutputType | null
+  }
+
+  export type ClaimTokenAvgAggregateOutputType = {
+    leafIndex: number | null
+  }
+
+  export type ClaimTokenSumAggregateOutputType = {
+    leafIndex: number | null
   }
 
   export type ClaimTokenMinAggregateOutputType = {
@@ -16238,6 +17447,16 @@ export namespace Prisma {
     payrunId: string | null
     payslipId: string | null
     paylinkId: string | null
+    expectedEmail: string | null
+    employeeSecretEnc: string | null
+    merklePathJson: string | null
+    pathIndicesJson: string | null
+    leafIndex: number | null
+    salaryCommitmentHex: string | null
+    ciphertextHashHex: string | null
+    employeeCommitmentHex: string | null
+    nullifierHex: string | null
+    encryptedAmountB64: string | null
     claimPackageJson: string | null
     issuedAt: Date | null
     expiresAt: Date | null
@@ -16252,6 +17471,16 @@ export namespace Prisma {
     payrunId: string | null
     payslipId: string | null
     paylinkId: string | null
+    expectedEmail: string | null
+    employeeSecretEnc: string | null
+    merklePathJson: string | null
+    pathIndicesJson: string | null
+    leafIndex: number | null
+    salaryCommitmentHex: string | null
+    ciphertextHashHex: string | null
+    employeeCommitmentHex: string | null
+    nullifierHex: string | null
+    encryptedAmountB64: string | null
     claimPackageJson: string | null
     issuedAt: Date | null
     expiresAt: Date | null
@@ -16266,6 +17495,16 @@ export namespace Prisma {
     payrunId: number
     payslipId: number
     paylinkId: number
+    expectedEmail: number
+    employeeSecretEnc: number
+    merklePathJson: number
+    pathIndicesJson: number
+    leafIndex: number
+    salaryCommitmentHex: number
+    ciphertextHashHex: number
+    employeeCommitmentHex: number
+    nullifierHex: number
+    encryptedAmountB64: number
     claimPackageJson: number
     issuedAt: number
     expiresAt: number
@@ -16276,12 +17515,30 @@ export namespace Prisma {
   }
 
 
+  export type ClaimTokenAvgAggregateInputType = {
+    leafIndex?: true
+  }
+
+  export type ClaimTokenSumAggregateInputType = {
+    leafIndex?: true
+  }
+
   export type ClaimTokenMinAggregateInputType = {
     id?: true
     tokenHash?: true
     payrunId?: true
     payslipId?: true
     paylinkId?: true
+    expectedEmail?: true
+    employeeSecretEnc?: true
+    merklePathJson?: true
+    pathIndicesJson?: true
+    leafIndex?: true
+    salaryCommitmentHex?: true
+    ciphertextHashHex?: true
+    employeeCommitmentHex?: true
+    nullifierHex?: true
+    encryptedAmountB64?: true
     claimPackageJson?: true
     issuedAt?: true
     expiresAt?: true
@@ -16296,6 +17553,16 @@ export namespace Prisma {
     payrunId?: true
     payslipId?: true
     paylinkId?: true
+    expectedEmail?: true
+    employeeSecretEnc?: true
+    merklePathJson?: true
+    pathIndicesJson?: true
+    leafIndex?: true
+    salaryCommitmentHex?: true
+    ciphertextHashHex?: true
+    employeeCommitmentHex?: true
+    nullifierHex?: true
+    encryptedAmountB64?: true
     claimPackageJson?: true
     issuedAt?: true
     expiresAt?: true
@@ -16310,6 +17577,16 @@ export namespace Prisma {
     payrunId?: true
     payslipId?: true
     paylinkId?: true
+    expectedEmail?: true
+    employeeSecretEnc?: true
+    merklePathJson?: true
+    pathIndicesJson?: true
+    leafIndex?: true
+    salaryCommitmentHex?: true
+    ciphertextHashHex?: true
+    employeeCommitmentHex?: true
+    nullifierHex?: true
+    encryptedAmountB64?: true
     claimPackageJson?: true
     issuedAt?: true
     expiresAt?: true
@@ -16357,6 +17634,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: ClaimTokenAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: ClaimTokenSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: ClaimTokenMinAggregateInputType
@@ -16387,6 +17676,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: ClaimTokenCountAggregateInputType | true
+    _avg?: ClaimTokenAvgAggregateInputType
+    _sum?: ClaimTokenSumAggregateInputType
     _min?: ClaimTokenMinAggregateInputType
     _max?: ClaimTokenMaxAggregateInputType
   }
@@ -16397,6 +17688,16 @@ export namespace Prisma {
     payrunId: string
     payslipId: string | null
     paylinkId: string | null
+    expectedEmail: string | null
+    employeeSecretEnc: string | null
+    merklePathJson: string | null
+    pathIndicesJson: string | null
+    leafIndex: number | null
+    salaryCommitmentHex: string | null
+    ciphertextHashHex: string | null
+    employeeCommitmentHex: string | null
+    nullifierHex: string | null
+    encryptedAmountB64: string | null
     claimPackageJson: string | null
     issuedAt: Date
     expiresAt: Date
@@ -16404,6 +17705,8 @@ export namespace Prisma {
     createdAt: Date
     updatedAt: Date
     _count: ClaimTokenCountAggregateOutputType | null
+    _avg: ClaimTokenAvgAggregateOutputType | null
+    _sum: ClaimTokenSumAggregateOutputType | null
     _min: ClaimTokenMinAggregateOutputType | null
     _max: ClaimTokenMaxAggregateOutputType | null
   }
@@ -16428,6 +17731,16 @@ export namespace Prisma {
     payrunId?: boolean
     payslipId?: boolean
     paylinkId?: boolean
+    expectedEmail?: boolean
+    employeeSecretEnc?: boolean
+    merklePathJson?: boolean
+    pathIndicesJson?: boolean
+    leafIndex?: boolean
+    salaryCommitmentHex?: boolean
+    ciphertextHashHex?: boolean
+    employeeCommitmentHex?: boolean
+    nullifierHex?: boolean
+    encryptedAmountB64?: boolean
     claimPackageJson?: boolean
     issuedAt?: boolean
     expiresAt?: boolean
@@ -16444,6 +17757,16 @@ export namespace Prisma {
     payrunId?: boolean
     payslipId?: boolean
     paylinkId?: boolean
+    expectedEmail?: boolean
+    employeeSecretEnc?: boolean
+    merklePathJson?: boolean
+    pathIndicesJson?: boolean
+    leafIndex?: boolean
+    salaryCommitmentHex?: boolean
+    ciphertextHashHex?: boolean
+    employeeCommitmentHex?: boolean
+    nullifierHex?: boolean
+    encryptedAmountB64?: boolean
     claimPackageJson?: boolean
     issuedAt?: boolean
     expiresAt?: boolean
@@ -16460,6 +17783,16 @@ export namespace Prisma {
     payrunId?: boolean
     payslipId?: boolean
     paylinkId?: boolean
+    expectedEmail?: boolean
+    employeeSecretEnc?: boolean
+    merklePathJson?: boolean
+    pathIndicesJson?: boolean
+    leafIndex?: boolean
+    salaryCommitmentHex?: boolean
+    ciphertextHashHex?: boolean
+    employeeCommitmentHex?: boolean
+    nullifierHex?: boolean
+    encryptedAmountB64?: boolean
     claimPackageJson?: boolean
     issuedAt?: boolean
     expiresAt?: boolean
@@ -16476,6 +17809,16 @@ export namespace Prisma {
     payrunId?: boolean
     payslipId?: boolean
     paylinkId?: boolean
+    expectedEmail?: boolean
+    employeeSecretEnc?: boolean
+    merklePathJson?: boolean
+    pathIndicesJson?: boolean
+    leafIndex?: boolean
+    salaryCommitmentHex?: boolean
+    ciphertextHashHex?: boolean
+    employeeCommitmentHex?: boolean
+    nullifierHex?: boolean
+    encryptedAmountB64?: boolean
     claimPackageJson?: boolean
     issuedAt?: boolean
     expiresAt?: boolean
@@ -16484,7 +17827,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type ClaimTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tokenHash" | "payrunId" | "payslipId" | "paylinkId" | "claimPackageJson" | "issuedAt" | "expiresAt" | "usedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["claimToken"]>
+  export type ClaimTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "tokenHash" | "payrunId" | "payslipId" | "paylinkId" | "expectedEmail" | "employeeSecretEnc" | "merklePathJson" | "pathIndicesJson" | "leafIndex" | "salaryCommitmentHex" | "ciphertextHashHex" | "employeeCommitmentHex" | "nullifierHex" | "encryptedAmountB64" | "claimPackageJson" | "issuedAt" | "expiresAt" | "usedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["claimToken"]>
   export type ClaimTokenInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     payslip?: boolean | ClaimToken$payslipArgs<ExtArgs>
     paylink?: boolean | ClaimToken$paylinkArgs<ExtArgs>
@@ -16510,6 +17853,16 @@ export namespace Prisma {
       payrunId: string
       payslipId: string | null
       paylinkId: string | null
+      expectedEmail: string | null
+      employeeSecretEnc: string | null
+      merklePathJson: string | null
+      pathIndicesJson: string | null
+      leafIndex: number | null
+      salaryCommitmentHex: string | null
+      ciphertextHashHex: string | null
+      employeeCommitmentHex: string | null
+      nullifierHex: string | null
+      encryptedAmountB64: string | null
       claimPackageJson: string | null
       issuedAt: Date
       expiresAt: Date
@@ -16946,6 +18299,16 @@ export namespace Prisma {
     readonly payrunId: FieldRef<"ClaimToken", 'String'>
     readonly payslipId: FieldRef<"ClaimToken", 'String'>
     readonly paylinkId: FieldRef<"ClaimToken", 'String'>
+    readonly expectedEmail: FieldRef<"ClaimToken", 'String'>
+    readonly employeeSecretEnc: FieldRef<"ClaimToken", 'String'>
+    readonly merklePathJson: FieldRef<"ClaimToken", 'String'>
+    readonly pathIndicesJson: FieldRef<"ClaimToken", 'String'>
+    readonly leafIndex: FieldRef<"ClaimToken", 'Int'>
+    readonly salaryCommitmentHex: FieldRef<"ClaimToken", 'String'>
+    readonly ciphertextHashHex: FieldRef<"ClaimToken", 'String'>
+    readonly employeeCommitmentHex: FieldRef<"ClaimToken", 'String'>
+    readonly nullifierHex: FieldRef<"ClaimToken", 'String'>
+    readonly encryptedAmountB64: FieldRef<"ClaimToken", 'String'>
     readonly claimPackageJson: FieldRef<"ClaimToken", 'String'>
     readonly issuedAt: FieldRef<"ClaimToken", 'DateTime'>
     readonly expiresAt: FieldRef<"ClaimToken", 'DateTime'>
@@ -24347,12 +25710,12 @@ export namespace Prisma {
   export const WorkerScalarFieldEnum: {
     id: 'id',
     orgId: 'orgId',
+    email: 'email',
+    googleId: 'googleId',
     wallet: 'wallet',
-    claimerConfAccount: 'claimerConfAccount',
     type: 'type',
     status: 'status',
     displayName: 'displayName',
-    email: 'email',
     externalId: 'externalId',
     startDate: 'startDate',
     endDate: 'endDate',
@@ -24362,6 +25725,19 @@ export namespace Prisma {
   };
 
   export type WorkerScalarFieldEnum = (typeof WorkerScalarFieldEnum)[keyof typeof WorkerScalarFieldEnum]
+
+
+  export const WorkerInviteScalarFieldEnum: {
+    id: 'id',
+    workerId: 'workerId',
+    token: 'token',
+    expiresAt: 'expiresAt',
+    acceptedAt: 'acceptedAt',
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  };
+
+  export type WorkerInviteScalarFieldEnum = (typeof WorkerInviteScalarFieldEnum)[keyof typeof WorkerInviteScalarFieldEnum]
 
 
   export const CompPlanScalarFieldEnum: {
@@ -24538,6 +25914,16 @@ export namespace Prisma {
     payrunId: 'payrunId',
     payslipId: 'payslipId',
     paylinkId: 'paylinkId',
+    expectedEmail: 'expectedEmail',
+    employeeSecretEnc: 'employeeSecretEnc',
+    merklePathJson: 'merklePathJson',
+    pathIndicesJson: 'pathIndicesJson',
+    leafIndex: 'leafIndex',
+    salaryCommitmentHex: 'salaryCommitmentHex',
+    ciphertextHashHex: 'ciphertextHashHex',
+    employeeCommitmentHex: 'employeeCommitmentHex',
+    nullifierHex: 'nullifierHex',
+    encryptedAmountB64: 'encryptedAmountB64',
     claimPackageJson: 'claimPackageJson',
     issuedAt: 'issuedAt',
     expiresAt: 'expiresAt',
@@ -25179,12 +26565,12 @@ export namespace Prisma {
     NOT?: WorkerWhereInput | WorkerWhereInput[]
     id?: StringFilter<"Worker"> | string
     orgId?: StringFilter<"Worker"> | string
-    wallet?: StringFilter<"Worker"> | string
-    claimerConfAccount?: StringNullableFilter<"Worker"> | string | null
+    email?: StringNullableFilter<"Worker"> | string | null
+    googleId?: StringNullableFilter<"Worker"> | string | null
+    wallet?: StringNullableFilter<"Worker"> | string | null
     type?: EnumWorkerTypeFilter<"Worker"> | $Enums.WorkerType
     status?: EnumWorkerStatusFilter<"Worker"> | $Enums.WorkerStatus
     displayName?: StringNullableFilter<"Worker"> | string | null
-    email?: StringNullableFilter<"Worker"> | string | null
     externalId?: StringNullableFilter<"Worker"> | string | null
     startDate?: DateTimeNullableFilter<"Worker"> | Date | string | null
     endDate?: DateTimeNullableFilter<"Worker"> | Date | string | null
@@ -25194,17 +26580,18 @@ export namespace Prisma {
     org?: XOR<OrgScalarRelationFilter, OrgWhereInput>
     compPlans?: CompPlanListRelationFilter
     payslips?: PayslipListRelationFilter
+    invite?: XOR<WorkerInviteNullableScalarRelationFilter, WorkerInviteWhereInput> | null
   }
 
   export type WorkerOrderByWithRelationInput = {
     id?: SortOrder
     orgId?: SortOrder
-    wallet?: SortOrder
-    claimerConfAccount?: SortOrderInput | SortOrder
+    email?: SortOrderInput | SortOrder
+    googleId?: SortOrderInput | SortOrder
+    wallet?: SortOrderInput | SortOrder
     type?: SortOrder
     status?: SortOrder
     displayName?: SortOrderInput | SortOrder
-    email?: SortOrderInput | SortOrder
     externalId?: SortOrderInput | SortOrder
     startDate?: SortOrderInput | SortOrder
     endDate?: SortOrderInput | SortOrder
@@ -25214,21 +26601,23 @@ export namespace Prisma {
     org?: OrgOrderByWithRelationInput
     compPlans?: CompPlanOrderByRelationAggregateInput
     payslips?: PayslipOrderByRelationAggregateInput
+    invite?: WorkerInviteOrderByWithRelationInput
   }
 
   export type WorkerWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    orgId_email?: WorkerOrgIdEmailCompoundUniqueInput
     orgId_wallet?: WorkerOrgIdWalletCompoundUniqueInput
     AND?: WorkerWhereInput | WorkerWhereInput[]
     OR?: WorkerWhereInput[]
     NOT?: WorkerWhereInput | WorkerWhereInput[]
     orgId?: StringFilter<"Worker"> | string
-    wallet?: StringFilter<"Worker"> | string
-    claimerConfAccount?: StringNullableFilter<"Worker"> | string | null
+    email?: StringNullableFilter<"Worker"> | string | null
+    googleId?: StringNullableFilter<"Worker"> | string | null
+    wallet?: StringNullableFilter<"Worker"> | string | null
     type?: EnumWorkerTypeFilter<"Worker"> | $Enums.WorkerType
     status?: EnumWorkerStatusFilter<"Worker"> | $Enums.WorkerStatus
     displayName?: StringNullableFilter<"Worker"> | string | null
-    email?: StringNullableFilter<"Worker"> | string | null
     externalId?: StringNullableFilter<"Worker"> | string | null
     startDate?: DateTimeNullableFilter<"Worker"> | Date | string | null
     endDate?: DateTimeNullableFilter<"Worker"> | Date | string | null
@@ -25238,17 +26627,18 @@ export namespace Prisma {
     org?: XOR<OrgScalarRelationFilter, OrgWhereInput>
     compPlans?: CompPlanListRelationFilter
     payslips?: PayslipListRelationFilter
-  }, "id" | "orgId_wallet">
+    invite?: XOR<WorkerInviteNullableScalarRelationFilter, WorkerInviteWhereInput> | null
+  }, "id" | "orgId_email" | "orgId_wallet">
 
   export type WorkerOrderByWithAggregationInput = {
     id?: SortOrder
     orgId?: SortOrder
-    wallet?: SortOrder
-    claimerConfAccount?: SortOrderInput | SortOrder
+    email?: SortOrderInput | SortOrder
+    googleId?: SortOrderInput | SortOrder
+    wallet?: SortOrderInput | SortOrder
     type?: SortOrder
     status?: SortOrder
     displayName?: SortOrderInput | SortOrder
-    email?: SortOrderInput | SortOrder
     externalId?: SortOrderInput | SortOrder
     startDate?: SortOrderInput | SortOrder
     endDate?: SortOrderInput | SortOrder
@@ -25266,18 +26656,83 @@ export namespace Prisma {
     NOT?: WorkerScalarWhereWithAggregatesInput | WorkerScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Worker"> | string
     orgId?: StringWithAggregatesFilter<"Worker"> | string
-    wallet?: StringWithAggregatesFilter<"Worker"> | string
-    claimerConfAccount?: StringNullableWithAggregatesFilter<"Worker"> | string | null
+    email?: StringNullableWithAggregatesFilter<"Worker"> | string | null
+    googleId?: StringNullableWithAggregatesFilter<"Worker"> | string | null
+    wallet?: StringNullableWithAggregatesFilter<"Worker"> | string | null
     type?: EnumWorkerTypeWithAggregatesFilter<"Worker"> | $Enums.WorkerType
     status?: EnumWorkerStatusWithAggregatesFilter<"Worker"> | $Enums.WorkerStatus
     displayName?: StringNullableWithAggregatesFilter<"Worker"> | string | null
-    email?: StringNullableWithAggregatesFilter<"Worker"> | string | null
     externalId?: StringNullableWithAggregatesFilter<"Worker"> | string | null
     startDate?: DateTimeNullableWithAggregatesFilter<"Worker"> | Date | string | null
     endDate?: DateTimeNullableWithAggregatesFilter<"Worker"> | Date | string | null
     metadata?: StringNullableWithAggregatesFilter<"Worker"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Worker"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Worker"> | Date | string
+  }
+
+  export type WorkerInviteWhereInput = {
+    AND?: WorkerInviteWhereInput | WorkerInviteWhereInput[]
+    OR?: WorkerInviteWhereInput[]
+    NOT?: WorkerInviteWhereInput | WorkerInviteWhereInput[]
+    id?: StringFilter<"WorkerInvite"> | string
+    workerId?: StringFilter<"WorkerInvite"> | string
+    token?: StringFilter<"WorkerInvite"> | string
+    expiresAt?: DateTimeFilter<"WorkerInvite"> | Date | string
+    acceptedAt?: DateTimeNullableFilter<"WorkerInvite"> | Date | string | null
+    createdAt?: DateTimeFilter<"WorkerInvite"> | Date | string
+    updatedAt?: DateTimeFilter<"WorkerInvite"> | Date | string
+    worker?: XOR<WorkerScalarRelationFilter, WorkerWhereInput>
+  }
+
+  export type WorkerInviteOrderByWithRelationInput = {
+    id?: SortOrder
+    workerId?: SortOrder
+    token?: SortOrder
+    expiresAt?: SortOrder
+    acceptedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    worker?: WorkerOrderByWithRelationInput
+  }
+
+  export type WorkerInviteWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    workerId?: string
+    token?: string
+    AND?: WorkerInviteWhereInput | WorkerInviteWhereInput[]
+    OR?: WorkerInviteWhereInput[]
+    NOT?: WorkerInviteWhereInput | WorkerInviteWhereInput[]
+    expiresAt?: DateTimeFilter<"WorkerInvite"> | Date | string
+    acceptedAt?: DateTimeNullableFilter<"WorkerInvite"> | Date | string | null
+    createdAt?: DateTimeFilter<"WorkerInvite"> | Date | string
+    updatedAt?: DateTimeFilter<"WorkerInvite"> | Date | string
+    worker?: XOR<WorkerScalarRelationFilter, WorkerWhereInput>
+  }, "id" | "workerId" | "token">
+
+  export type WorkerInviteOrderByWithAggregationInput = {
+    id?: SortOrder
+    workerId?: SortOrder
+    token?: SortOrder
+    expiresAt?: SortOrder
+    acceptedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+    _count?: WorkerInviteCountOrderByAggregateInput
+    _max?: WorkerInviteMaxOrderByAggregateInput
+    _min?: WorkerInviteMinOrderByAggregateInput
+  }
+
+  export type WorkerInviteScalarWhereWithAggregatesInput = {
+    AND?: WorkerInviteScalarWhereWithAggregatesInput | WorkerInviteScalarWhereWithAggregatesInput[]
+    OR?: WorkerInviteScalarWhereWithAggregatesInput[]
+    NOT?: WorkerInviteScalarWhereWithAggregatesInput | WorkerInviteScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"WorkerInvite"> | string
+    workerId?: StringWithAggregatesFilter<"WorkerInvite"> | string
+    token?: StringWithAggregatesFilter<"WorkerInvite"> | string
+    expiresAt?: DateTimeWithAggregatesFilter<"WorkerInvite"> | Date | string
+    acceptedAt?: DateTimeNullableWithAggregatesFilter<"WorkerInvite"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"WorkerInvite"> | Date | string
+    updatedAt?: DateTimeWithAggregatesFilter<"WorkerInvite"> | Date | string
   }
 
   export type CompPlanWhereInput = {
@@ -26146,6 +27601,16 @@ export namespace Prisma {
     payrunId?: StringFilter<"ClaimToken"> | string
     payslipId?: StringNullableFilter<"ClaimToken"> | string | null
     paylinkId?: StringNullableFilter<"ClaimToken"> | string | null
+    expectedEmail?: StringNullableFilter<"ClaimToken"> | string | null
+    employeeSecretEnc?: StringNullableFilter<"ClaimToken"> | string | null
+    merklePathJson?: StringNullableFilter<"ClaimToken"> | string | null
+    pathIndicesJson?: StringNullableFilter<"ClaimToken"> | string | null
+    leafIndex?: IntNullableFilter<"ClaimToken"> | number | null
+    salaryCommitmentHex?: StringNullableFilter<"ClaimToken"> | string | null
+    ciphertextHashHex?: StringNullableFilter<"ClaimToken"> | string | null
+    employeeCommitmentHex?: StringNullableFilter<"ClaimToken"> | string | null
+    nullifierHex?: StringNullableFilter<"ClaimToken"> | string | null
+    encryptedAmountB64?: StringNullableFilter<"ClaimToken"> | string | null
     claimPackageJson?: StringNullableFilter<"ClaimToken"> | string | null
     issuedAt?: DateTimeFilter<"ClaimToken"> | Date | string
     expiresAt?: DateTimeFilter<"ClaimToken"> | Date | string
@@ -26162,6 +27627,16 @@ export namespace Prisma {
     payrunId?: SortOrder
     payslipId?: SortOrderInput | SortOrder
     paylinkId?: SortOrderInput | SortOrder
+    expectedEmail?: SortOrderInput | SortOrder
+    employeeSecretEnc?: SortOrderInput | SortOrder
+    merklePathJson?: SortOrderInput | SortOrder
+    pathIndicesJson?: SortOrderInput | SortOrder
+    leafIndex?: SortOrderInput | SortOrder
+    salaryCommitmentHex?: SortOrderInput | SortOrder
+    ciphertextHashHex?: SortOrderInput | SortOrder
+    employeeCommitmentHex?: SortOrderInput | SortOrder
+    nullifierHex?: SortOrderInput | SortOrder
+    encryptedAmountB64?: SortOrderInput | SortOrder
     claimPackageJson?: SortOrderInput | SortOrder
     issuedAt?: SortOrder
     expiresAt?: SortOrder
@@ -26181,6 +27656,16 @@ export namespace Prisma {
     payrunId?: StringFilter<"ClaimToken"> | string
     payslipId?: StringNullableFilter<"ClaimToken"> | string | null
     paylinkId?: StringNullableFilter<"ClaimToken"> | string | null
+    expectedEmail?: StringNullableFilter<"ClaimToken"> | string | null
+    employeeSecretEnc?: StringNullableFilter<"ClaimToken"> | string | null
+    merklePathJson?: StringNullableFilter<"ClaimToken"> | string | null
+    pathIndicesJson?: StringNullableFilter<"ClaimToken"> | string | null
+    leafIndex?: IntNullableFilter<"ClaimToken"> | number | null
+    salaryCommitmentHex?: StringNullableFilter<"ClaimToken"> | string | null
+    ciphertextHashHex?: StringNullableFilter<"ClaimToken"> | string | null
+    employeeCommitmentHex?: StringNullableFilter<"ClaimToken"> | string | null
+    nullifierHex?: StringNullableFilter<"ClaimToken"> | string | null
+    encryptedAmountB64?: StringNullableFilter<"ClaimToken"> | string | null
     claimPackageJson?: StringNullableFilter<"ClaimToken"> | string | null
     issuedAt?: DateTimeFilter<"ClaimToken"> | Date | string
     expiresAt?: DateTimeFilter<"ClaimToken"> | Date | string
@@ -26197,6 +27682,16 @@ export namespace Prisma {
     payrunId?: SortOrder
     payslipId?: SortOrderInput | SortOrder
     paylinkId?: SortOrderInput | SortOrder
+    expectedEmail?: SortOrderInput | SortOrder
+    employeeSecretEnc?: SortOrderInput | SortOrder
+    merklePathJson?: SortOrderInput | SortOrder
+    pathIndicesJson?: SortOrderInput | SortOrder
+    leafIndex?: SortOrderInput | SortOrder
+    salaryCommitmentHex?: SortOrderInput | SortOrder
+    ciphertextHashHex?: SortOrderInput | SortOrder
+    employeeCommitmentHex?: SortOrderInput | SortOrder
+    nullifierHex?: SortOrderInput | SortOrder
+    encryptedAmountB64?: SortOrderInput | SortOrder
     claimPackageJson?: SortOrderInput | SortOrder
     issuedAt?: SortOrder
     expiresAt?: SortOrder
@@ -26204,8 +27699,10 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: ClaimTokenCountOrderByAggregateInput
+    _avg?: ClaimTokenAvgOrderByAggregateInput
     _max?: ClaimTokenMaxOrderByAggregateInput
     _min?: ClaimTokenMinOrderByAggregateInput
+    _sum?: ClaimTokenSumOrderByAggregateInput
   }
 
   export type ClaimTokenScalarWhereWithAggregatesInput = {
@@ -26217,6 +27714,16 @@ export namespace Prisma {
     payrunId?: StringWithAggregatesFilter<"ClaimToken"> | string
     payslipId?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
     paylinkId?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    expectedEmail?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    employeeSecretEnc?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    merklePathJson?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    pathIndicesJson?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    leafIndex?: IntNullableWithAggregatesFilter<"ClaimToken"> | number | null
+    salaryCommitmentHex?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    ciphertextHashHex?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    employeeCommitmentHex?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    nullifierHex?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
+    encryptedAmountB64?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
     claimPackageJson?: StringNullableWithAggregatesFilter<"ClaimToken"> | string | null
     issuedAt?: DateTimeWithAggregatesFilter<"ClaimToken"> | Date | string
     expiresAt?: DateTimeWithAggregatesFilter<"ClaimToken"> | Date | string
@@ -27011,12 +28518,12 @@ export namespace Prisma {
 
   export type WorkerCreateInput = {
     id?: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -27026,17 +28533,18 @@ export namespace Prisma {
     org: OrgCreateNestedOneWithoutWorkersInput
     compPlans?: CompPlanCreateNestedManyWithoutWorkerInput
     payslips?: PayslipCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerUncheckedCreateInput = {
     id?: string
     orgId: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -27045,16 +28553,17 @@ export namespace Prisma {
     updatedAt?: Date | string
     compPlans?: CompPlanUncheckedCreateNestedManyWithoutWorkerInput
     payslips?: PayslipUncheckedCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteUncheckedCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -27064,17 +28573,18 @@ export namespace Prisma {
     org?: OrgUpdateOneRequiredWithoutWorkersNestedInput
     compPlans?: CompPlanUpdateManyWithoutWorkerNestedInput
     payslips?: PayslipUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUpdateOneWithoutWorkerNestedInput
   }
 
   export type WorkerUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -27083,17 +28593,18 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     compPlans?: CompPlanUncheckedUpdateManyWithoutWorkerNestedInput
     payslips?: PayslipUncheckedUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUncheckedUpdateOneWithoutWorkerNestedInput
   }
 
   export type WorkerCreateManyInput = {
     id?: string
     orgId: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -27104,12 +28615,12 @@ export namespace Prisma {
 
   export type WorkerUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -27121,16 +28632,85 @@ export namespace Prisma {
   export type WorkerUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     metadata?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkerInviteCreateInput = {
+    id?: string
+    token: string
+    expiresAt: Date | string
+    acceptedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    worker: WorkerCreateNestedOneWithoutInviteInput
+  }
+
+  export type WorkerInviteUncheckedCreateInput = {
+    id?: string
+    workerId: string
+    token: string
+    expiresAt: Date | string
+    acceptedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type WorkerInviteUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    worker?: WorkerUpdateOneRequiredWithoutInviteNestedInput
+  }
+
+  export type WorkerInviteUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workerId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkerInviteCreateManyInput = {
+    id?: string
+    workerId: string
+    token: string
+    expiresAt: Date | string
+    acceptedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type WorkerInviteUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkerInviteUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    workerId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -28159,6 +29739,16 @@ export namespace Prisma {
     id?: string
     tokenHash: string
     payrunId: string
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -28175,6 +29765,16 @@ export namespace Prisma {
     payrunId: string
     payslipId?: string | null
     paylinkId?: string | null
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -28187,6 +29787,16 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28203,6 +29813,16 @@ export namespace Prisma {
     payrunId?: StringFieldUpdateOperationsInput | string
     payslipId?: NullableStringFieldUpdateOperationsInput | string | null
     paylinkId?: NullableStringFieldUpdateOperationsInput | string | null
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28217,6 +29837,16 @@ export namespace Prisma {
     payrunId: string
     payslipId?: string | null
     paylinkId?: string | null
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -28229,6 +29859,16 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -28243,6 +29883,16 @@ export namespace Prisma {
     payrunId?: StringFieldUpdateOperationsInput | string
     payslipId?: NullableStringFieldUpdateOperationsInput | string | null
     paylinkId?: NullableStringFieldUpdateOperationsInput | string | null
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -29268,12 +30918,22 @@ export namespace Prisma {
     none?: PayslipWhereInput
   }
 
+  export type WorkerInviteNullableScalarRelationFilter = {
+    is?: WorkerInviteWhereInput | null
+    isNot?: WorkerInviteWhereInput | null
+  }
+
   export type CompPlanOrderByRelationAggregateInput = {
     _count?: SortOrder
   }
 
   export type PayslipOrderByRelationAggregateInput = {
     _count?: SortOrder
+  }
+
+  export type WorkerOrgIdEmailCompoundUniqueInput = {
+    orgId: string
+    email: string
   }
 
   export type WorkerOrgIdWalletCompoundUniqueInput = {
@@ -29284,12 +30944,12 @@ export namespace Prisma {
   export type WorkerCountOrderByAggregateInput = {
     id?: SortOrder
     orgId?: SortOrder
+    email?: SortOrder
+    googleId?: SortOrder
     wallet?: SortOrder
-    claimerConfAccount?: SortOrder
     type?: SortOrder
     status?: SortOrder
     displayName?: SortOrder
-    email?: SortOrder
     externalId?: SortOrder
     startDate?: SortOrder
     endDate?: SortOrder
@@ -29301,12 +30961,12 @@ export namespace Prisma {
   export type WorkerMaxOrderByAggregateInput = {
     id?: SortOrder
     orgId?: SortOrder
+    email?: SortOrder
+    googleId?: SortOrder
     wallet?: SortOrder
-    claimerConfAccount?: SortOrder
     type?: SortOrder
     status?: SortOrder
     displayName?: SortOrder
-    email?: SortOrder
     externalId?: SortOrder
     startDate?: SortOrder
     endDate?: SortOrder
@@ -29318,12 +30978,12 @@ export namespace Prisma {
   export type WorkerMinOrderByAggregateInput = {
     id?: SortOrder
     orgId?: SortOrder
+    email?: SortOrder
+    googleId?: SortOrder
     wallet?: SortOrder
-    claimerConfAccount?: SortOrder
     type?: SortOrder
     status?: SortOrder
     displayName?: SortOrder
-    email?: SortOrder
     externalId?: SortOrder
     startDate?: SortOrder
     endDate?: SortOrder
@@ -29366,16 +31026,46 @@ export namespace Prisma {
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
+  export type WorkerScalarRelationFilter = {
+    is?: WorkerWhereInput
+    isNot?: WorkerWhereInput
+  }
+
+  export type WorkerInviteCountOrderByAggregateInput = {
+    id?: SortOrder
+    workerId?: SortOrder
+    token?: SortOrder
+    expiresAt?: SortOrder
+    acceptedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type WorkerInviteMaxOrderByAggregateInput = {
+    id?: SortOrder
+    workerId?: SortOrder
+    token?: SortOrder
+    expiresAt?: SortOrder
+    acceptedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type WorkerInviteMinOrderByAggregateInput = {
+    id?: SortOrder
+    workerId?: SortOrder
+    token?: SortOrder
+    expiresAt?: SortOrder
+    acceptedAt?: SortOrder
+    createdAt?: SortOrder
+    updatedAt?: SortOrder
+  }
+
   export type EnumPayScheduleFilter<$PrismaModel = never> = {
     equals?: $Enums.PaySchedule | EnumPayScheduleFieldRefInput<$PrismaModel>
     in?: $Enums.PaySchedule[] | ListEnumPayScheduleFieldRefInput<$PrismaModel>
     notIn?: $Enums.PaySchedule[] | ListEnumPayScheduleFieldRefInput<$PrismaModel>
     not?: NestedEnumPayScheduleFilter<$PrismaModel> | $Enums.PaySchedule
-  }
-
-  export type WorkerScalarRelationFilter = {
-    is?: WorkerWhereInput
-    isNot?: WorkerWhereInput
   }
 
   export type CompPlanCountOrderByAggregateInput = {
@@ -29992,6 +31682,16 @@ export namespace Prisma {
     payrunId?: SortOrder
     payslipId?: SortOrder
     paylinkId?: SortOrder
+    expectedEmail?: SortOrder
+    employeeSecretEnc?: SortOrder
+    merklePathJson?: SortOrder
+    pathIndicesJson?: SortOrder
+    leafIndex?: SortOrder
+    salaryCommitmentHex?: SortOrder
+    ciphertextHashHex?: SortOrder
+    employeeCommitmentHex?: SortOrder
+    nullifierHex?: SortOrder
+    encryptedAmountB64?: SortOrder
     claimPackageJson?: SortOrder
     issuedAt?: SortOrder
     expiresAt?: SortOrder
@@ -30000,12 +31700,26 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
+  export type ClaimTokenAvgOrderByAggregateInput = {
+    leafIndex?: SortOrder
+  }
+
   export type ClaimTokenMaxOrderByAggregateInput = {
     id?: SortOrder
     tokenHash?: SortOrder
     payrunId?: SortOrder
     payslipId?: SortOrder
     paylinkId?: SortOrder
+    expectedEmail?: SortOrder
+    employeeSecretEnc?: SortOrder
+    merklePathJson?: SortOrder
+    pathIndicesJson?: SortOrder
+    leafIndex?: SortOrder
+    salaryCommitmentHex?: SortOrder
+    ciphertextHashHex?: SortOrder
+    employeeCommitmentHex?: SortOrder
+    nullifierHex?: SortOrder
+    encryptedAmountB64?: SortOrder
     claimPackageJson?: SortOrder
     issuedAt?: SortOrder
     expiresAt?: SortOrder
@@ -30020,12 +31734,26 @@ export namespace Prisma {
     payrunId?: SortOrder
     payslipId?: SortOrder
     paylinkId?: SortOrder
+    expectedEmail?: SortOrder
+    employeeSecretEnc?: SortOrder
+    merklePathJson?: SortOrder
+    pathIndicesJson?: SortOrder
+    leafIndex?: SortOrder
+    salaryCommitmentHex?: SortOrder
+    ciphertextHashHex?: SortOrder
+    employeeCommitmentHex?: SortOrder
+    nullifierHex?: SortOrder
+    encryptedAmountB64?: SortOrder
     claimPackageJson?: SortOrder
     issuedAt?: SortOrder
     expiresAt?: SortOrder
     usedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type ClaimTokenSumOrderByAggregateInput = {
+    leafIndex?: SortOrder
   }
 
   export type EnumIdempotencyStatusFilter<$PrismaModel = never> = {
@@ -30895,6 +32623,12 @@ export namespace Prisma {
     connect?: PayslipWhereUniqueInput | PayslipWhereUniqueInput[]
   }
 
+  export type WorkerInviteCreateNestedOneWithoutWorkerInput = {
+    create?: XOR<WorkerInviteCreateWithoutWorkerInput, WorkerInviteUncheckedCreateWithoutWorkerInput>
+    connectOrCreate?: WorkerInviteCreateOrConnectWithoutWorkerInput
+    connect?: WorkerInviteWhereUniqueInput
+  }
+
   export type CompPlanUncheckedCreateNestedManyWithoutWorkerInput = {
     create?: XOR<CompPlanCreateWithoutWorkerInput, CompPlanUncheckedCreateWithoutWorkerInput> | CompPlanCreateWithoutWorkerInput[] | CompPlanUncheckedCreateWithoutWorkerInput[]
     connectOrCreate?: CompPlanCreateOrConnectWithoutWorkerInput | CompPlanCreateOrConnectWithoutWorkerInput[]
@@ -30907,6 +32641,12 @@ export namespace Prisma {
     connectOrCreate?: PayslipCreateOrConnectWithoutWorkerInput | PayslipCreateOrConnectWithoutWorkerInput[]
     createMany?: PayslipCreateManyWorkerInputEnvelope
     connect?: PayslipWhereUniqueInput | PayslipWhereUniqueInput[]
+  }
+
+  export type WorkerInviteUncheckedCreateNestedOneWithoutWorkerInput = {
+    create?: XOR<WorkerInviteCreateWithoutWorkerInput, WorkerInviteUncheckedCreateWithoutWorkerInput>
+    connectOrCreate?: WorkerInviteCreateOrConnectWithoutWorkerInput
+    connect?: WorkerInviteWhereUniqueInput
   }
 
   export type EnumWorkerTypeFieldUpdateOperationsInput = {
@@ -30957,6 +32697,16 @@ export namespace Prisma {
     deleteMany?: PayslipScalarWhereInput | PayslipScalarWhereInput[]
   }
 
+  export type WorkerInviteUpdateOneWithoutWorkerNestedInput = {
+    create?: XOR<WorkerInviteCreateWithoutWorkerInput, WorkerInviteUncheckedCreateWithoutWorkerInput>
+    connectOrCreate?: WorkerInviteCreateOrConnectWithoutWorkerInput
+    upsert?: WorkerInviteUpsertWithoutWorkerInput
+    disconnect?: WorkerInviteWhereInput | boolean
+    delete?: WorkerInviteWhereInput | boolean
+    connect?: WorkerInviteWhereUniqueInput
+    update?: XOR<XOR<WorkerInviteUpdateToOneWithWhereWithoutWorkerInput, WorkerInviteUpdateWithoutWorkerInput>, WorkerInviteUncheckedUpdateWithoutWorkerInput>
+  }
+
   export type CompPlanUncheckedUpdateManyWithoutWorkerNestedInput = {
     create?: XOR<CompPlanCreateWithoutWorkerInput, CompPlanUncheckedCreateWithoutWorkerInput> | CompPlanCreateWithoutWorkerInput[] | CompPlanUncheckedCreateWithoutWorkerInput[]
     connectOrCreate?: CompPlanCreateOrConnectWithoutWorkerInput | CompPlanCreateOrConnectWithoutWorkerInput[]
@@ -30983,6 +32733,30 @@ export namespace Prisma {
     update?: PayslipUpdateWithWhereUniqueWithoutWorkerInput | PayslipUpdateWithWhereUniqueWithoutWorkerInput[]
     updateMany?: PayslipUpdateManyWithWhereWithoutWorkerInput | PayslipUpdateManyWithWhereWithoutWorkerInput[]
     deleteMany?: PayslipScalarWhereInput | PayslipScalarWhereInput[]
+  }
+
+  export type WorkerInviteUncheckedUpdateOneWithoutWorkerNestedInput = {
+    create?: XOR<WorkerInviteCreateWithoutWorkerInput, WorkerInviteUncheckedCreateWithoutWorkerInput>
+    connectOrCreate?: WorkerInviteCreateOrConnectWithoutWorkerInput
+    upsert?: WorkerInviteUpsertWithoutWorkerInput
+    disconnect?: WorkerInviteWhereInput | boolean
+    delete?: WorkerInviteWhereInput | boolean
+    connect?: WorkerInviteWhereUniqueInput
+    update?: XOR<XOR<WorkerInviteUpdateToOneWithWhereWithoutWorkerInput, WorkerInviteUpdateWithoutWorkerInput>, WorkerInviteUncheckedUpdateWithoutWorkerInput>
+  }
+
+  export type WorkerCreateNestedOneWithoutInviteInput = {
+    create?: XOR<WorkerCreateWithoutInviteInput, WorkerUncheckedCreateWithoutInviteInput>
+    connectOrCreate?: WorkerCreateOrConnectWithoutInviteInput
+    connect?: WorkerWhereUniqueInput
+  }
+
+  export type WorkerUpdateOneRequiredWithoutInviteNestedInput = {
+    create?: XOR<WorkerCreateWithoutInviteInput, WorkerUncheckedCreateWithoutInviteInput>
+    connectOrCreate?: WorkerCreateOrConnectWithoutInviteInput
+    upsert?: WorkerUpsertWithoutInviteInput
+    connect?: WorkerWhereUniqueInput
+    update?: XOR<XOR<WorkerUpdateToOneWithWhereWithoutInviteInput, WorkerUpdateWithoutInviteInput>, WorkerUncheckedUpdateWithoutInviteInput>
   }
 
   export type WorkerCreateNestedOneWithoutCompPlansInput = {
@@ -31987,12 +33761,12 @@ export namespace Prisma {
 
   export type WorkerCreateWithoutOrgInput = {
     id?: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -32001,16 +33775,17 @@ export namespace Prisma {
     updatedAt?: Date | string
     compPlans?: CompPlanCreateNestedManyWithoutWorkerInput
     payslips?: PayslipCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerUncheckedCreateWithoutOrgInput = {
     id?: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -32019,6 +33794,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     compPlans?: CompPlanUncheckedCreateNestedManyWithoutWorkerInput
     payslips?: PayslipUncheckedCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteUncheckedCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerCreateOrConnectWithoutOrgInput = {
@@ -32394,12 +34170,12 @@ export namespace Prisma {
     NOT?: WorkerScalarWhereInput | WorkerScalarWhereInput[]
     id?: StringFilter<"Worker"> | string
     orgId?: StringFilter<"Worker"> | string
-    wallet?: StringFilter<"Worker"> | string
-    claimerConfAccount?: StringNullableFilter<"Worker"> | string | null
+    email?: StringNullableFilter<"Worker"> | string | null
+    googleId?: StringNullableFilter<"Worker"> | string | null
+    wallet?: StringNullableFilter<"Worker"> | string | null
     type?: EnumWorkerTypeFilter<"Worker"> | $Enums.WorkerType
     status?: EnumWorkerStatusFilter<"Worker"> | $Enums.WorkerStatus
     displayName?: StringNullableFilter<"Worker"> | string | null
-    email?: StringNullableFilter<"Worker"> | string | null
     externalId?: StringNullableFilter<"Worker"> | string | null
     startDate?: DateTimeNullableFilter<"Worker"> | Date | string | null
     endDate?: DateTimeNullableFilter<"Worker"> | Date | string | null
@@ -32911,6 +34687,29 @@ export namespace Prisma {
     skipDuplicates?: boolean
   }
 
+  export type WorkerInviteCreateWithoutWorkerInput = {
+    id?: string
+    token: string
+    expiresAt: Date | string
+    acceptedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type WorkerInviteUncheckedCreateWithoutWorkerInput = {
+    id?: string
+    token: string
+    expiresAt: Date | string
+    acceptedAt?: Date | string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type WorkerInviteCreateOrConnectWithoutWorkerInput = {
+    where: WorkerInviteWhereUniqueInput
+    create: XOR<WorkerInviteCreateWithoutWorkerInput, WorkerInviteUncheckedCreateWithoutWorkerInput>
+  }
+
   export type OrgUpsertWithoutWorkersInput = {
     update: XOR<OrgUpdateWithoutWorkersInput, OrgUncheckedUpdateWithoutWorkersInput>
     create: XOR<OrgCreateWithoutWorkersInput, OrgUncheckedCreateWithoutWorkersInput>
@@ -33046,14 +34845,135 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"Payslip"> | Date | string
   }
 
-  export type WorkerCreateWithoutCompPlansInput = {
+  export type WorkerInviteUpsertWithoutWorkerInput = {
+    update: XOR<WorkerInviteUpdateWithoutWorkerInput, WorkerInviteUncheckedUpdateWithoutWorkerInput>
+    create: XOR<WorkerInviteCreateWithoutWorkerInput, WorkerInviteUncheckedCreateWithoutWorkerInput>
+    where?: WorkerInviteWhereInput
+  }
+
+  export type WorkerInviteUpdateToOneWithWhereWithoutWorkerInput = {
+    where?: WorkerInviteWhereInput
+    data: XOR<WorkerInviteUpdateWithoutWorkerInput, WorkerInviteUncheckedUpdateWithoutWorkerInput>
+  }
+
+  export type WorkerInviteUpdateWithoutWorkerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkerInviteUncheckedUpdateWithoutWorkerInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    acceptedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkerCreateWithoutInviteInput = {
     id?: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
+    externalId?: string | null
+    startDate?: Date | string | null
+    endDate?: Date | string | null
+    metadata?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    org: OrgCreateNestedOneWithoutWorkersInput
+    compPlans?: CompPlanCreateNestedManyWithoutWorkerInput
+    payslips?: PayslipCreateNestedManyWithoutWorkerInput
+  }
+
+  export type WorkerUncheckedCreateWithoutInviteInput = {
+    id?: string
+    orgId: string
     email?: string | null
+    googleId?: string | null
+    wallet?: string | null
+    type?: $Enums.WorkerType
+    status?: $Enums.WorkerStatus
+    displayName?: string | null
+    externalId?: string | null
+    startDate?: Date | string | null
+    endDate?: Date | string | null
+    metadata?: string | null
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    compPlans?: CompPlanUncheckedCreateNestedManyWithoutWorkerInput
+    payslips?: PayslipUncheckedCreateNestedManyWithoutWorkerInput
+  }
+
+  export type WorkerCreateOrConnectWithoutInviteInput = {
+    where: WorkerWhereUniqueInput
+    create: XOR<WorkerCreateWithoutInviteInput, WorkerUncheckedCreateWithoutInviteInput>
+  }
+
+  export type WorkerUpsertWithoutInviteInput = {
+    update: XOR<WorkerUpdateWithoutInviteInput, WorkerUncheckedUpdateWithoutInviteInput>
+    create: XOR<WorkerCreateWithoutInviteInput, WorkerUncheckedCreateWithoutInviteInput>
+    where?: WorkerWhereInput
+  }
+
+  export type WorkerUpdateToOneWithWhereWithoutInviteInput = {
+    where?: WorkerWhereInput
+    data: XOR<WorkerUpdateWithoutInviteInput, WorkerUncheckedUpdateWithoutInviteInput>
+  }
+
+  export type WorkerUpdateWithoutInviteInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
+    status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    externalId?: NullableStringFieldUpdateOperationsInput | string | null
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    org?: OrgUpdateOneRequiredWithoutWorkersNestedInput
+    compPlans?: CompPlanUpdateManyWithoutWorkerNestedInput
+    payslips?: PayslipUpdateManyWithoutWorkerNestedInput
+  }
+
+  export type WorkerUncheckedUpdateWithoutInviteInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    orgId?: StringFieldUpdateOperationsInput | string
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
+    type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
+    status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
+    displayName?: NullableStringFieldUpdateOperationsInput | string | null
+    externalId?: NullableStringFieldUpdateOperationsInput | string | null
+    startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    metadata?: NullableStringFieldUpdateOperationsInput | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    compPlans?: CompPlanUncheckedUpdateManyWithoutWorkerNestedInput
+    payslips?: PayslipUncheckedUpdateManyWithoutWorkerNestedInput
+  }
+
+  export type WorkerCreateWithoutCompPlansInput = {
+    id?: string
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
+    type?: $Enums.WorkerType
+    status?: $Enums.WorkerStatus
+    displayName?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -33062,17 +34982,18 @@ export namespace Prisma {
     updatedAt?: Date | string
     org: OrgCreateNestedOneWithoutWorkersInput
     payslips?: PayslipCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerUncheckedCreateWithoutCompPlansInput = {
     id?: string
     orgId: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -33080,6 +35001,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     payslips?: PayslipUncheckedCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteUncheckedCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerCreateOrConnectWithoutCompPlansInput = {
@@ -33100,12 +35022,12 @@ export namespace Prisma {
 
   export type WorkerUpdateWithoutCompPlansInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33114,17 +35036,18 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     org?: OrgUpdateOneRequiredWithoutWorkersNestedInput
     payslips?: PayslipUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUpdateOneWithoutWorkerNestedInput
   }
 
   export type WorkerUncheckedUpdateWithoutCompPlansInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33132,6 +35055,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     payslips?: PayslipUncheckedUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUncheckedUpdateOneWithoutWorkerNestedInput
   }
 
   export type OrgCreateWithoutPayrunsInput = {
@@ -33448,6 +35372,16 @@ export namespace Prisma {
     id?: string
     tokenHash: string
     payrunId: string
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -33462,6 +35396,16 @@ export namespace Prisma {
     tokenHash: string
     payrunId: string
     paylinkId?: string | null
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -33555,12 +35499,12 @@ export namespace Prisma {
 
   export type WorkerCreateWithoutPayslipsInput = {
     id?: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -33569,17 +35513,18 @@ export namespace Prisma {
     updatedAt?: Date | string
     org: OrgCreateNestedOneWithoutWorkersInput
     compPlans?: CompPlanCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerUncheckedCreateWithoutPayslipsInput = {
     id?: string
     orgId: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -33587,6 +35532,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     compPlans?: CompPlanUncheckedCreateNestedManyWithoutWorkerInput
+    invite?: WorkerInviteUncheckedCreateNestedOneWithoutWorkerInput
   }
 
   export type WorkerCreateOrConnectWithoutPayslipsInput = {
@@ -33619,6 +35565,16 @@ export namespace Prisma {
     payrunId?: StringFilter<"ClaimToken"> | string
     payslipId?: StringNullableFilter<"ClaimToken"> | string | null
     paylinkId?: StringNullableFilter<"ClaimToken"> | string | null
+    expectedEmail?: StringNullableFilter<"ClaimToken"> | string | null
+    employeeSecretEnc?: StringNullableFilter<"ClaimToken"> | string | null
+    merklePathJson?: StringNullableFilter<"ClaimToken"> | string | null
+    pathIndicesJson?: StringNullableFilter<"ClaimToken"> | string | null
+    leafIndex?: IntNullableFilter<"ClaimToken"> | number | null
+    salaryCommitmentHex?: StringNullableFilter<"ClaimToken"> | string | null
+    ciphertextHashHex?: StringNullableFilter<"ClaimToken"> | string | null
+    employeeCommitmentHex?: StringNullableFilter<"ClaimToken"> | string | null
+    nullifierHex?: StringNullableFilter<"ClaimToken"> | string | null
+    encryptedAmountB64?: StringNullableFilter<"ClaimToken"> | string | null
     claimPackageJson?: StringNullableFilter<"ClaimToken"> | string | null
     issuedAt?: DateTimeFilter<"ClaimToken"> | Date | string
     expiresAt?: DateTimeFilter<"ClaimToken"> | Date | string
@@ -33719,12 +35675,12 @@ export namespace Prisma {
 
   export type WorkerUpdateWithoutPayslipsInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33733,17 +35689,18 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     org?: OrgUpdateOneRequiredWithoutWorkersNestedInput
     compPlans?: CompPlanUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUpdateOneWithoutWorkerNestedInput
   }
 
   export type WorkerUncheckedUpdateWithoutPayslipsInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -33751,12 +35708,23 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     compPlans?: CompPlanUncheckedUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUncheckedUpdateOneWithoutWorkerNestedInput
   }
 
   export type ClaimTokenCreateWithoutPaylinkInput = {
     id?: string
     tokenHash: string
     payrunId: string
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -33771,6 +35739,16 @@ export namespace Prisma {
     tokenHash: string
     payrunId: string
     payslipId?: string | null
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -34924,12 +36902,12 @@ export namespace Prisma {
 
   export type WorkerCreateManyOrgInput = {
     id?: string
-    wallet: string
-    claimerConfAccount?: string | null
+    email?: string | null
+    googleId?: string | null
+    wallet?: string | null
     type?: $Enums.WorkerType
     status?: $Enums.WorkerStatus
     displayName?: string | null
-    email?: string | null
     externalId?: string | null
     startDate?: Date | string | null
     endDate?: Date | string | null
@@ -35089,12 +37067,12 @@ export namespace Prisma {
 
   export type WorkerUpdateWithoutOrgInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35103,16 +37081,17 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     compPlans?: CompPlanUpdateManyWithoutWorkerNestedInput
     payslips?: PayslipUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUpdateOneWithoutWorkerNestedInput
   }
 
   export type WorkerUncheckedUpdateWithoutOrgInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35121,16 +37100,17 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     compPlans?: CompPlanUncheckedUpdateManyWithoutWorkerNestedInput
     payslips?: PayslipUncheckedUpdateManyWithoutWorkerNestedInput
+    invite?: WorkerInviteUncheckedUpdateOneWithoutWorkerNestedInput
   }
 
   export type WorkerUncheckedUpdateManyWithoutOrgInput = {
     id?: StringFieldUpdateOperationsInput | string
-    wallet?: StringFieldUpdateOperationsInput | string
-    claimerConfAccount?: NullableStringFieldUpdateOperationsInput | string | null
+    email?: NullableStringFieldUpdateOperationsInput | string | null
+    googleId?: NullableStringFieldUpdateOperationsInput | string | null
+    wallet?: NullableStringFieldUpdateOperationsInput | string | null
     type?: EnumWorkerTypeFieldUpdateOperationsInput | $Enums.WorkerType
     status?: EnumWorkerStatusFieldUpdateOperationsInput | $Enums.WorkerStatus
     displayName?: NullableStringFieldUpdateOperationsInput | string | null
-    email?: NullableStringFieldUpdateOperationsInput | string | null
     externalId?: NullableStringFieldUpdateOperationsInput | string | null
     startDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     endDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -35854,6 +37834,16 @@ export namespace Prisma {
     tokenHash: string
     payrunId: string
     paylinkId?: string | null
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -35866,6 +37856,16 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35880,6 +37880,16 @@ export namespace Prisma {
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
     paylinkId?: NullableStringFieldUpdateOperationsInput | string | null
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35893,6 +37903,16 @@ export namespace Prisma {
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
     paylinkId?: NullableStringFieldUpdateOperationsInput | string | null
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35906,6 +37926,16 @@ export namespace Prisma {
     tokenHash: string
     payrunId: string
     payslipId?: string | null
+    expectedEmail?: string | null
+    employeeSecretEnc?: string | null
+    merklePathJson?: string | null
+    pathIndicesJson?: string | null
+    leafIndex?: number | null
+    salaryCommitmentHex?: string | null
+    ciphertextHashHex?: string | null
+    employeeCommitmentHex?: string | null
+    nullifierHex?: string | null
+    encryptedAmountB64?: string | null
     claimPackageJson?: string | null
     issuedAt?: Date | string
     expiresAt: Date | string
@@ -35918,6 +37948,16 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35932,6 +37972,16 @@ export namespace Prisma {
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
     payslipId?: NullableStringFieldUpdateOperationsInput | string | null
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -35945,6 +37995,16 @@ export namespace Prisma {
     tokenHash?: StringFieldUpdateOperationsInput | string
     payrunId?: StringFieldUpdateOperationsInput | string
     payslipId?: NullableStringFieldUpdateOperationsInput | string | null
+    expectedEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeSecretEnc?: NullableStringFieldUpdateOperationsInput | string | null
+    merklePathJson?: NullableStringFieldUpdateOperationsInput | string | null
+    pathIndicesJson?: NullableStringFieldUpdateOperationsInput | string | null
+    leafIndex?: NullableIntFieldUpdateOperationsInput | number | null
+    salaryCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    ciphertextHashHex?: NullableStringFieldUpdateOperationsInput | string | null
+    employeeCommitmentHex?: NullableStringFieldUpdateOperationsInput | string | null
+    nullifierHex?: NullableStringFieldUpdateOperationsInput | string | null
+    encryptedAmountB64?: NullableStringFieldUpdateOperationsInput | string | null
     claimPackageJson?: NullableStringFieldUpdateOperationsInput | string | null
     issuedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string

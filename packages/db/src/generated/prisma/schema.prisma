@@ -83,21 +83,22 @@ enum WorkerType {
 }
 
 enum WorkerStatus {
-  ACTIVE
-  INACTIVE
+  INVITED // Invite sent, not yet accepted
+  ACTIVE // Accepted invite, can receive payments
+  INACTIVE // Deactivated
 }
 
 model Worker {
-  id                 String       @id @default(cuid())
-  orgId              String
-  wallet             String // Worker's wallet pubkey (base58)
-  claimerConfAccount String? // Inco confidential account for payouts
-  type               WorkerType   @default(EMPLOYEE)
-  status             WorkerStatus @default(ACTIVE)
+  id       String       @id @default(cuid())
+  orgId    String
+  email    String? // Primary identifier for invite/auth (optional for legacy workers)
+  googleId String? // Google OAuth ID for authentication
+  wallet   String? // Worker's wallet - OPTIONAL, set at claim time or legacy
+  type     WorkerType   @default(EMPLOYEE)
+  status   WorkerStatus @default(ACTIVE)
 
-  // Optional metadata (stored privately, never on-chain)
+  // Profile metadata (stored privately, never on-chain)
   displayName String?
-  email       String?
   externalId  String? // For integration with external HR systems
 
   startDate DateTime?
@@ -108,12 +109,32 @@ model Worker {
   updatedAt DateTime @updatedAt
 
   // Relations
-  org       Org        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org       Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
   compPlans CompPlan[]
   payslips  Payslip[]
+  invite    WorkerInvite?
 
-  @@unique([orgId, wallet])
+  @@unique([orgId, email]) // Unique constraint for email-based workers
+  @@unique([orgId, wallet]) // Keep legacy wallet constraint for backwards compat
   @@index([orgId, status])
+  @@index([googleId])
+}
+
+// Worker invite for email-based onboarding
+model WorkerInvite {
+  id         String    @id @default(cuid())
+  workerId   String    @unique
+  token      String    @unique // Invite token in URL
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
 }
 
 enum PaySchedule {
@@ -466,19 +487,37 @@ model SiwsNonce {
 // =============================================================================
 
 model ClaimToken {
-  id               String  @id @default(cuid())
-  tokenHash        String  @unique // sha256(token) - never stores the actual token
-  payrunId         String // Payrun this token belongs to
-  payslipId        String? // Optional: if token is for a specific payslip
-  paylinkId        String? // Optional: if token is for a paylink
+  id        String  @id @default(cuid())
+  tokenHash String  @unique // sha256(token) - never stores the actual token
+  payrunId  String // Payrun this token belongs to
+  payslipId String? // Optional: if token is for a specific payslip
+  paylinkId String? // Optional: if token is for a paylink
+
+  // Identity binding (for privacy-preserving claims)
+  expectedEmail String? // Email that can claim this token (verified via Google OAuth)
+
+  // Proof generation data (stored encrypted, used at claim time)
+  employeeSecretEnc String? // Encrypted employee_secret for ZK proof generation
+  merklePathJson    String? // JSON array of merkle path siblings
+  pathIndicesJson   String? // JSON array of path indices (booleans)
+  leafIndex         Int? // Position in merkle tree
+
+  // Commitment data for proof
+  salaryCommitmentHex   String?
+  ciphertextHashHex     String?
+  employeeCommitmentHex String?
+  nullifierHex          String?
+  encryptedAmountB64    String?
+
+  // Legacy field - will be removed after migration
   claimPackageJson String?
 
   // Token metadata
-  issuedAt  DateTime  @default(now()) // When token was created
-  expiresAt DateTime // When token expires
-  usedAt    DateTime? // When token was used
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
 
-  // Relations (for cleanup and auditing)
+  // Relations
   payslip Payslip? @relation(fields: [payslipId], references: [id])
   paylink Paylink? @relation(fields: [paylinkId], references: [id])
 
@@ -488,6 +527,7 @@ model ClaimToken {
   @@index([tokenHash])
   @@index([expiresAt])
   @@index([payrunId])
+  @@index([expectedEmail])
 }
 
 // =============================================================================

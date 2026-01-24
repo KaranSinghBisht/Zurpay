@@ -152,16 +152,26 @@ exports.Prisma.OrgMemberScalarFieldEnum = {
 exports.Prisma.WorkerScalarFieldEnum = {
   id: 'id',
   orgId: 'orgId',
+  email: 'email',
+  googleId: 'googleId',
   wallet: 'wallet',
-  claimerConfAccount: 'claimerConfAccount',
   type: 'type',
   status: 'status',
   displayName: 'displayName',
-  email: 'email',
   externalId: 'externalId',
   startDate: 'startDate',
   endDate: 'endDate',
   metadata: 'metadata',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.WorkerInviteScalarFieldEnum = {
+  id: 'id',
+  workerId: 'workerId',
+  token: 'token',
+  expiresAt: 'expiresAt',
+  acceptedAt: 'acceptedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -316,6 +326,16 @@ exports.Prisma.ClaimTokenScalarFieldEnum = {
   payrunId: 'payrunId',
   payslipId: 'payslipId',
   paylinkId: 'paylinkId',
+  expectedEmail: 'expectedEmail',
+  employeeSecretEnc: 'employeeSecretEnc',
+  merklePathJson: 'merklePathJson',
+  pathIndicesJson: 'pathIndicesJson',
+  leafIndex: 'leafIndex',
+  salaryCommitmentHex: 'salaryCommitmentHex',
+  ciphertextHashHex: 'ciphertextHashHex',
+  employeeCommitmentHex: 'employeeCommitmentHex',
+  nullifierHex: 'nullifierHex',
+  encryptedAmountB64: 'encryptedAmountB64',
   claimPackageJson: 'claimPackageJson',
   issuedAt: 'issuedAt',
   expiresAt: 'expiresAt',
@@ -446,6 +466,7 @@ exports.WorkerType = exports.$Enums.WorkerType = {
 };
 
 exports.WorkerStatus = exports.$Enums.WorkerStatus = {
+  INVITED: 'INVITED',
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE'
 };
@@ -543,6 +564,7 @@ exports.Prisma.ModelName = {
   Org: 'Org',
   OrgMember: 'OrgMember',
   Worker: 'Worker',
+  WorkerInvite: 'WorkerInvite',
   CompPlan: 'CompPlan',
   Payrun: 'Payrun',
   Payslip: 'Payslip',
