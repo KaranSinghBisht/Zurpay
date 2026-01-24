@@ -23,7 +23,7 @@ interface OnboardingState {
   orgIdHex: string | null;
   orgName: string;
   treasuryAccount: string;
-  workerWallet: string;
+  workerEmail: string;
   workerName: string;
 }
 
@@ -65,7 +65,7 @@ export function OnboardingWizard() {
     orgIdHex: null,
     orgName: '',
     treasuryAccount: '',
-    workerWallet: '',
+    workerEmail: '',
     workerName: '',
   });
   const [loading, setLoading] = useState(false);
@@ -247,26 +247,25 @@ export function OnboardingWizard() {
     }
   };
 
-  const handleAddWorker = async () => {
-    if (!wallet || !state.orgId || !state.workerWallet) return;
+  const handleInviteWorker = async () => {
+    if (!wallet || !state.orgId || !state.workerEmail) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      await api.workers.create(
+      await api.workers.invite(
         state.orgId,
         {
-          wallet: state.workerWallet,
+          email: state.workerEmail,
           displayName: state.workerName || undefined,
-          type: 'EMPLOYEE',
         },
         wallet
       );
 
       setStep('complete');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add worker');
+      setError(err instanceof Error ? err.message : 'Failed to invite worker');
     } finally {
       setLoading(false);
     }
@@ -512,29 +511,30 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step: Add Worker */}
+          {/* Step: Invite Worker */}
           {step === 'add-worker' && (
             <div>
               <div className="text-center mb-6">
                 <div className="text-5xl mb-4">🎉</div>
                 <h1 className="text-3xl font-bold text-white mb-2">Treasury Initialized!</h1>
-                <p className="text-slate-400">Now let&apos;s add your first team member</p>
+                <p className="text-slate-400">Invite your first team member by email</p>
               </div>
 
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Worker Wallet Address *
+                    Employee Email *
                   </label>
                   <input
-                    type="text"
-                    value={state.workerWallet}
-                    onChange={(e) =>
-                      setState((prev) => ({ ...prev, workerWallet: e.target.value }))
-                    }
-                    placeholder="Enter Solana wallet address"
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors font-mono text-sm"
+                    type="email"
+                    value={state.workerEmail}
+                    onChange={(e) => setState((prev) => ({ ...prev, workerEmail: e.target.value }))}
+                    placeholder="employee@company.com"
+                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors"
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    They&apos;ll receive an invite email to join your organization
+                  </p>
                 </div>
 
                 <div>
@@ -558,17 +558,17 @@ export function OnboardingWizard() {
                     Skip for now
                   </button>
                   <button
-                    onClick={handleAddWorker}
-                    disabled={loading || !state.workerWallet}
+                    onClick={handleInviteWorker}
+                    disabled={loading || !state.workerEmail}
                     className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold px-6 py-4 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Adding...
+                        Sending Invite...
                       </>
                     ) : (
-                      'Add Worker →'
+                      'Send Invite →'
                     )}
                   </button>
                 </div>

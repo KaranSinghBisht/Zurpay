@@ -481,6 +481,22 @@ export const api = {
         body: JSON.stringify(data),
         wallet,
       }),
+
+    invite: (
+      orgId: string,
+      data: {
+        email: string;
+        displayName?: string;
+        type?: 'EMPLOYEE' | 'CONTRACTOR';
+        rateAmount?: string;
+      },
+      wallet: string
+    ) =>
+      fetchApi<Worker>(`/api/v1/orgs/${orgId}/workers/invite`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        wallet,
+      }),
   },
 
   auditLogs: {

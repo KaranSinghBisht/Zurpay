@@ -15,6 +15,7 @@ import {
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
 } from '@zurpay/sdk';
 import { ConfettiCelebration } from '../../../components/ConfettiCelebration';
+import { WalletButton } from '../../../components/WalletButton';
 import { employeeApi } from '../../../lib/api';
 
 type ClaimStatus =
@@ -229,15 +230,29 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
               </div>
 
               <div>
-                <div className="text-sm text-zinc-400">Payout Account</div>
-                <div className="font-mono text-sm truncate">{claimPackage?.claimerConfAccount}</div>
+                <div className="text-sm text-zinc-400">Amount</div>
+                <div className="text-2xl font-bold text-emerald-400">Encrypted</div>
+                <div className="text-xs text-zinc-500">Amount is hidden for your privacy</div>
               </div>
 
-              <div>
-                <div className="text-sm text-zinc-400">Amount</div>
-                <div className="text-2xl font-bold text-emerald-400">Hidden</div>
-                <div className="text-xs text-zinc-500">Amount is encrypted for your privacy</div>
-              </div>
+              {!connected && (
+                <div className="p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg">
+                  <p className="text-sm text-zinc-400 mb-3">
+                    Connect any wallet to receive your payment. Your employer won&apos;t see which
+                    wallet you use.
+                  </p>
+                  <WalletButton />
+                </div>
+              )}
+
+              {connected && (
+                <div>
+                  <div className="text-sm text-zinc-400 mb-1">Receiving Wallet</div>
+                  <div className="font-mono text-sm text-emerald-400 truncate">
+                    {publicKey?.toBase58()}
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div className="p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-300 text-sm">
@@ -245,20 +260,21 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
                 </div>
               )}
 
-              <button
-                onClick={handleClaim}
-                disabled={!connected || status === 'claiming'}
-                className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
-              >
-                {!connected && 'Connect Wallet to Claim'}
-                {connected && status === 'ready' && 'Claim Salary'}
-                {connected && status === 'claiming' && (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Claiming...
-                  </span>
-                )}
-              </button>
+              {connected && (
+                <button
+                  onClick={handleClaim}
+                  disabled={status === 'claiming'}
+                  className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
+                >
+                  {status === 'ready' && 'Claim Salary'}
+                  {status === 'claiming' && (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Claiming...
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         );
