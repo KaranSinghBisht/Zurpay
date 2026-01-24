@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Link from 'next/link';
 import { api, Worker, Org } from '../../../../lib/api';
+import { getAuthToken } from '../../../../contexts/AuthContext';
 import { Check, Copy } from 'lucide-react';
 
 export default function WorkersPage() {
@@ -299,12 +300,17 @@ function AddWorkerModal({
         payload.currency = 'USDC';
       }
 
+      const token = getAuthToken();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/v1/orgs/${orgId}/workers/invite`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-wallet': wallet,
-        },
+        headers,
         body: JSON.stringify(payload),
       });
 
