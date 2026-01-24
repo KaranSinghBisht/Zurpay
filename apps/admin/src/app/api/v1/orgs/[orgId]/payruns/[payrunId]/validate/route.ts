@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
+import { createHash, randomBytes, createCipheriv } from 'crypto';
 import { prisma, MemberRole } from '@/lib/db';
 import { requireAuth, requireOrgAccess } from '@/lib/auth';
 import { encryptAmountForInco, hashToken } from '@/lib/crypto';
+import { sendClaimEmail } from '@/lib/email';
 
 const MERKLE_DEPTH = 20;
 
@@ -237,9 +238,35 @@ export async function POST(
       },
     });
 
+    const emailResults: { email: string; success: boolean; error?: string }[] = [];
+    for (const link of claimLinks) {
+      if (link.email) {
+        try {
+          const payslipData = payrun.payslips.find((p) => p.worker.email === link.email);
+          await sendClaimEmail({
+            to: link.email,
+            orgName: payrun.org.name,
+            claimToken: link.token,
+            payrunId: payrun.id,
+            amount: payslipData?.amount.toString(),
+            currency: 'USDC',
+          });
+          emailResults.push({ email: link.email, success: true });
+        } catch (error) {
+          console.error(`Failed to send claim email to ${link.email}:`, error);
+          emailResults.push({
+            email: link.email,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+    }
+
     return NextResponse.json({
       merkleRootHex,
       claimLinks,
+      emailResults,
       message: 'Payrun validated. Proofs will be generated at claim time for privacy.',
     });
   } catch (error) {

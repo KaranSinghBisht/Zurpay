@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import { prisma, MemberRole } from '@/lib/db';
 import { requireAuth, requireOrgAccess } from '@/lib/auth';
+import { sendInviteEmail } from '@/lib/email';
 
 const InviteWorkerSchema = z.object({
   email: z.string().email(),
@@ -74,11 +75,26 @@ export async function POST(
     const employeeAppUrl = process.env.NEXT_PUBLIC_EMPLOYEE_APP_URL || 'http://localhost:3002';
     const inviteUrl = `${employeeAppUrl}/invite/${inviteToken}`;
 
+    const org = await prisma.org.findUnique({ where: { id: orgId }, select: { name: true } });
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await sendInviteEmail({
+          to: data.email,
+          orgName: org?.name || 'Your Organization',
+          inviteToken,
+        });
+      } catch (emailError) {
+        console.error('Failed to send invite email:', emailError);
+      }
+    }
+
     return NextResponse.json(
       {
         worker,
         inviteUrl,
         expiresAt,
+        emailSent: !!process.env.RESEND_API_KEY,
       },
       { status: 201 }
     );
