@@ -517,7 +517,17 @@ export default function PayrunDetailPage() {
         );
       }
 
-      const signedTx = await signTransaction(transaction);
+      console.log('Simulation passed, requesting wallet signature...');
+      console.log('Transaction instructions:', transaction.instructions.length);
+      console.log('Fee payer:', transaction.feePayer?.toBase58());
+
+      let signedTx;
+      try {
+        signedTx = await signTransaction(transaction);
+      } catch (signErr) {
+        console.error('Wallet sign error details:', signErr);
+        throw signErr;
+      }
       const signature = await connection.sendRawTransaction(signedTx.serialize(), {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
