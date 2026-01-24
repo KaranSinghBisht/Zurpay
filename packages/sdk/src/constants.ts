@@ -34,7 +34,7 @@ export const DEFAULT_INCO_PROGRAM_ID = new PublicKey(
 );
 
 export const DEFAULT_ZK_VERIFIER_PROGRAM_ID = new PublicKey(
-  getEnvOrDefault('ZK_VERIFIER_PROGRAM_ID', '4MZoLmEsXE1hx62GeSRABGzSGEv7isjck8h4rsnidFkU')
+  getEnvOrDefault('ZK_VERIFIER_PROGRAM_ID', 'HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS')
 );
 
 export const MERKLE_TREE_DEPTH = 20;
@@ -42,7 +42,7 @@ export const MERKLE_TREE_DEPTH = 20;
 export const MAX_EMPLOYEES_PER_PAYRUN = 2 ** MERKLE_TREE_DEPTH;
 
 export const PUBLIC_INPUTS_SCHEMA_VERSION = 4;
-export const PUBLIC_INPUTS_LEN_V4 = 44;
+export const PUBLIC_INPUTS_LEN_V4 = 32; // SHA256 hash of all public inputs
 export const PUBLIC_INPUTS_LEN_V3 = 1036;
 export const PUBLIC_INPUTS_LEN_V2 = 192;
 
@@ -50,6 +50,8 @@ export const PDA_SEEDS = {
   ORG: Buffer.from('org'),
   PAYRUN: Buffer.from('payrun'),
   NULLIFIER: Buffer.from('null'),
+  TREASURY: Buffer.from('treasury'),
+  EMPLOYEE_CONF: Buffer.from('employee_conf'),
 } as const;
 
 export const DOMAIN_SEPARATOR = Buffer.from('zurpay-v1');

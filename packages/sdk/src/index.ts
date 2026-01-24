@@ -5,3 +5,4 @@ export * from './utils';
 export * from './claim';
 export * from './transport';
 export * from './decrypt';
+export * from './treasury';

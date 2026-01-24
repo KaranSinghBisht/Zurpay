@@ -105,12 +105,13 @@ export interface ClaimPackageV2 {
 }
 
 /**
- * Claim accounts needed for the claim instruction
+ * Claim accounts needed for the claim instruction.
+ * The treasury is now a PDA derived from org_id, not a separate conf account.
  */
 export interface ClaimAccounts {
   org: PublicKey;
   payrun: PublicKey;
-  treasuryConfAccount: PublicKey;
+  treasury: PublicKey;
   claimerConfAccount: PublicKey;
   zkVerifierProgram: PublicKey;
   incoProgram: PublicKey;

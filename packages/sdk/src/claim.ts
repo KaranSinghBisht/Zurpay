@@ -1,4 +1,10 @@
-import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js';
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+  ComputeBudgetProgram,
+} from '@solana/web3.js';
 import { ClaimPackageV2, ClaimAccounts } from './types';
 import { hexToBytes, deriveNullifierPda } from './utils';
 import { sha256 } from './merkle';
@@ -6,6 +12,8 @@ import {
   ZURPAY_PROGRAM_ID,
   PDA_SEEDS,
   PUBLIC_INPUTS_LEN_V3,
+  PUBLIC_INPUTS_LEN_V4,
+  PUBLIC_INPUTS_LEN_V2,
   DEFAULT_INCO_PROGRAM_ID,
 } from './constants';
 
@@ -88,7 +96,7 @@ export function validateClaimPackage(claimPackage: ClaimPackageV2): {
   const publicInputsBytes = validateBase64Field(
     claimPackage.publicInputsB64,
     'publicInputsB64',
-    192
+    PUBLIC_INPUTS_LEN_V4
   );
   const encryptedAmount = validateBase64Field(
     claimPackage.encryptedAmountB64,
@@ -96,9 +104,10 @@ export function validateClaimPackage(claimPackage: ClaimPackageV2): {
     1
   );
 
-  if (publicInputsBytes.length !== PUBLIC_INPUTS_LEN_V3 && publicInputsBytes.length !== 192) {
+  const validLengths = [PUBLIC_INPUTS_LEN_V4, 44, PUBLIC_INPUTS_LEN_V2, PUBLIC_INPUTS_LEN_V3];
+  if (!validLengths.includes(publicInputsBytes.length)) {
     throw new Error(
-      `ClaimPackage validation failed: publicInputsB64 decoded to ${publicInputsBytes.length} bytes (expected ${PUBLIC_INPUTS_LEN_V3} for V3 or 192 for V2)`
+      `ClaimPackage validation failed: publicInputsB64 decoded to ${publicInputsBytes.length} bytes (expected 32 or 44 for V4, ${PUBLIC_INPUTS_LEN_V2} for V2, or ${PUBLIC_INPUTS_LEN_V3} for V3)`
     );
   }
 
@@ -184,7 +193,7 @@ export function buildClaimInstruction(
     { pubkey: nullifierPda, isSigner: false, isWritable: true },
     { pubkey: accounts.zkVerifierProgram, isSigner: false, isWritable: false },
     { pubkey: accounts.incoProgram, isSigner: false, isWritable: false },
-    { pubkey: accounts.treasuryConfAccount, isSigner: false, isWritable: true },
+    { pubkey: accounts.treasury, isSigner: false, isWritable: true },
     { pubkey: accounts.claimerConfAccount, isSigner: false, isWritable: true },
     {
       pubkey: new PublicKey('11111111111111111111111111111111'),
@@ -267,7 +276,11 @@ export async function submitClaimFromPackage(
     incoAllowanceAccounts
   );
 
-  const transaction = new Transaction().add(instruction);
+  const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+    units: 600_000,
+  });
+
+  const transaction = new Transaction().add(computeBudgetIx).add(instruction);
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = wallet.publicKey;
@@ -312,16 +325,16 @@ export async function submitClaimFromPackage(
   return signature;
 }
 
-/**
- * Derive PDA addresses for a claim from org and payrun IDs.
- */
 export function deriveClaimPdas(
   orgIdHex: string,
   payrunIdHex: string,
+  claimerWallet: PublicKey,
   programId: PublicKey = ZURPAY_PROGRAM_ID
 ): {
   org: PublicKey;
   payrun: PublicKey;
+  treasury: PublicKey;
+  employeeConf: PublicKey;
 } {
   const orgId = hexToBytes(orgIdHex);
   const payrunId = hexToBytes(payrunIdHex);
@@ -333,9 +346,18 @@ export function deriveClaimPdas(
     programId
   );
 
+  const [treasury] = PublicKey.findProgramAddressSync([PDA_SEEDS.TREASURY, orgId], programId);
+
+  const [employeeConf] = PublicKey.findProgramAddressSync(
+    [PDA_SEEDS.EMPLOYEE_CONF, orgId, claimerWallet.toBuffer()],
+    programId
+  );
+
   return {
     org: orgPda,
     payrun: payrunPda,
+    treasury,
+    employeeConf,
   };
 }
 
