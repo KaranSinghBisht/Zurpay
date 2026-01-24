@@ -9,6 +9,7 @@ import {
   submitClaimFromPackage,
   verifyClaimerMatch,
   deriveClaimPdas,
+  initEmployeeConf,
   ZURPAY_PROGRAM_ID,
   DEFAULT_INCO_PROGRAM_ID,
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
@@ -109,30 +110,38 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
       setStatus('claiming');
       setError('');
 
-      // Derive PDAs
-      const { org: orgPda, payrun: payrunPda } = deriveClaimPdas(
+      const {
+        org: orgPda,
+        payrun: payrunPda,
+        treasury,
+        employeeConf,
+      } = deriveClaimPdas(
         claimPackage.orgIdHex,
         claimPackage.payrunIdHex,
+        publicKey,
         ZURPAY_PROGRAM_ID
       );
 
-      const claimerConfAccount = new PublicKey(claimPackage.claimerConfAccount);
+      const incoProgram = claimPackage.incoProgramId
+        ? new PublicKey(claimPackage.incoProgramId)
+        : DEFAULT_INCO_PROGRAM_ID;
 
-      const treasuryConfAccount = claimPackage.treasuryConfAccount
-        ? new PublicKey(claimPackage.treasuryConfAccount)
-        : null;
-      if (!treasuryConfAccount) {
-        throw new Error(
-          'Treasury account missing from claim package. Ask the admin to re-validate the payrun.'
+      const employeeConfInfo = await connection.getAccountInfo(employeeConf);
+      if (!employeeConfInfo) {
+        console.log('Initializing employee conf account...');
+        await initEmployeeConf(
+          connection,
+          { publicKey, signTransaction },
+          claimPackage.orgIdHex,
+          incoProgram,
+          ZURPAY_PROGRAM_ID
         );
+        console.log('Employee conf account initialized');
       }
 
       const zkVerifierProgram = claimPackage.zkVerifierProgramId
         ? new PublicKey(claimPackage.zkVerifierProgramId)
         : DEFAULT_ZK_VERIFIER_PROGRAM_ID;
-      const incoProgram = claimPackage.incoProgramId
-        ? new PublicKey(claimPackage.incoProgramId)
-        : DEFAULT_INCO_PROGRAM_ID;
 
       const signature = await submitClaimFromPackage(
         connection,
@@ -141,8 +150,8 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
         {
           org: orgPda,
           payrun: payrunPda,
-          treasuryConfAccount,
-          claimerConfAccount,
+          treasury,
+          claimerConfAccount: employeeConf,
           zkVerifierProgram,
           incoProgram,
         },

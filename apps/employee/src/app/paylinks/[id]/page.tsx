@@ -8,6 +8,7 @@ import {
   ClaimPackageV2,
   submitClaimFromPackage,
   deriveClaimPdas,
+  initEmployeeConf,
   ZURPAY_PROGRAM_ID,
   DEFAULT_INCO_PROGRAM_ID,
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
@@ -129,33 +130,48 @@ export default function PaylinkClaimPage() {
       );
       console.log('=========================');
 
-      const { org: orgPda, payrun: payrunPda } = deriveClaimPdas(
+      const {
+        org: orgPda,
+        payrun: payrunPda,
+        treasury,
+        employeeConf,
+      } = deriveClaimPdas(
         claimPackage.orgIdHex,
         claimPackage.payrunIdHex,
+        publicKey,
         ZURPAY_PROGRAM_ID
       );
-      console.log('Derived PDAs - org:', orgPda.toBase58(), 'payrun:', payrunPda.toBase58());
+      console.log(
+        'Derived PDAs - org:',
+        orgPda.toBase58(),
+        'payrun:',
+        payrunPda.toBase58(),
+        'treasury:',
+        treasury.toBase58(),
+        'employeeConf:',
+        employeeConf.toBase58()
+      );
 
-      const claimerConfAccount = new PublicKey(claimPackage.claimerConfAccount);
-      console.log('claimerConfAccount parsed:', claimerConfAccount.toBase58());
+      const incoProgram = claimPackage.incoProgramId
+        ? new PublicKey(claimPackage.incoProgramId)
+        : DEFAULT_INCO_PROGRAM_ID;
 
-      const treasuryConfAccount = claimPackage.treasuryConfAccount
-        ? new PublicKey(claimPackage.treasuryConfAccount)
-        : null;
-
-      if (!treasuryConfAccount) {
-        throw new Error(
-          'Treasury account missing from claim package. Contact your employer to re-validate the payrun.'
+      const employeeConfInfo = await connection.getAccountInfo(employeeConf);
+      if (!employeeConfInfo) {
+        console.log('Initializing employee conf account...');
+        await initEmployeeConf(
+          connection,
+          { publicKey, signTransaction },
+          claimPackage.orgIdHex,
+          incoProgram,
+          ZURPAY_PROGRAM_ID
         );
+        console.log('Employee conf account initialized');
       }
 
       const zkVerifierProgram = claimPackage.zkVerifierProgramId
         ? new PublicKey(claimPackage.zkVerifierProgramId)
         : DEFAULT_ZK_VERIFIER_PROGRAM_ID;
-
-      const incoProgram = claimPackage.incoProgramId
-        ? new PublicKey(claimPackage.incoProgramId)
-        : DEFAULT_INCO_PROGRAM_ID;
 
       const signature = await submitClaimFromPackage(
         connection,
@@ -164,8 +180,8 @@ export default function PaylinkClaimPage() {
         {
           org: orgPda,
           payrun: payrunPda,
-          treasuryConfAccount,
-          claimerConfAccount,
+          treasury,
+          claimerConfAccount: employeeConf,
           zkVerifierProgram,
           incoProgram,
         },
@@ -176,7 +192,7 @@ export default function PaylinkClaimPage() {
 
       await employeeApi.paylinks.claim(token, {
         claimerWallet: publicKey.toBase58(),
-        claimerConfAccount: claimerConfAccount.toBase58(),
+        claimerConfAccount: employeeConf.toBase58(),
         txSig: signature,
       });
 

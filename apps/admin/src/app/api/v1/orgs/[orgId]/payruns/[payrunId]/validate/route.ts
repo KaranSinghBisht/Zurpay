@@ -4,10 +4,22 @@ import { spawn } from 'child_process';
 import { writeFileSync, readFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import bs58 from 'bs58';
+import { PublicKey } from '@solana/web3.js';
 import { prisma, MemberRole } from '@/lib/db';
 import { requireAuth, requireOrgAccess } from '@/lib/auth';
 import { encryptAmountForInco, hashToken } from '@/lib/crypto';
 import type { ClaimPackageV2 } from '@zurpay/sdk';
+
+const ZURPAY_PROGRAM_ID = new PublicKey('Cf9tReQuvS6cb4awYPCVozQnCWYdqia62yRShJs2URy9');
+const EMPLOYEE_CONF_SEED = Buffer.from('employee_conf');
+
+function deriveEmployeeConfPda(orgId: Uint8Array, employeeWallet: PublicKey): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [EMPLOYEE_CONF_SEED, orgId, employeeWallet.toBuffer()],
+    ZURPAY_PROGRAM_ID
+  );
+  return pda;
+}
 
 const MERKLE_DEPTH = 20;
 const SUNSPOT_BIN = process.env.SUNSPOT_BIN || '/Users/kryptos/sunspot/go/sunspot';
@@ -302,8 +314,10 @@ export async function POST(
       }
       const salaryCommitment = sha256(amountBytes);
 
-      const payoutPubkey = payslip.worker.claimerConfAccount || payslip.worker.wallet;
-      const payoutPubkeyBytes = bs58.decode(payoutPubkey);
+      const employeeWallet = new PublicKey(payslip.worker.wallet);
+      const employeeConfPda = deriveEmployeeConfPda(orgIdBytes, employeeWallet);
+      const payoutPubkey = employeeConfPda.toBase58();
+      const payoutPubkeyBytes = employeeConfPda.toBytes();
       const payoutPubkeyHash = sha256(payoutPubkeyBytes);
 
       const domainSep = sha256(new Uint8Array([...orgIdBytes, ...payrunIdBytes]));
