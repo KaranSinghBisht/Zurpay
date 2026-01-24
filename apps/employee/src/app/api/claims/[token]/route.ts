@@ -17,6 +17,17 @@ export async function GET(
 
     const claimToken = await prisma.claimToken.findUnique({
       where: { tokenHash },
+      include: {
+        payslip: {
+          include: {
+            payrun: {
+              include: {
+                org: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!claimToken) {
@@ -31,13 +42,34 @@ export async function GET(
       return NextResponse.json({ error: 'Claim expired' }, { status: 410 });
     }
 
-    if (!claimToken.claimPackageJson) {
-      return NextResponse.json({ error: 'Claim package not found' }, { status: 404 });
+    if (claimToken.claimPackageJson) {
+      const claimPackage = JSON.parse(claimToken.claimPackageJson);
+      return NextResponse.json({ type: 'legacy', claimPackage });
     }
 
-    const claimPackage = JSON.parse(claimToken.claimPackageJson);
+    if (claimToken.employeeSecretEnc && claimToken.merklePathJson) {
+      const payrun = claimToken.payslip?.payrun;
+      const org = payrun?.org;
 
-    return NextResponse.json(claimPackage);
+      if (!payrun || !org) {
+        return NextResponse.json({ error: 'Payrun data not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({
+        type: 'privacy-preserving',
+        requiresAuth: !!claimToken.expectedEmail,
+        expectedEmail: claimToken.expectedEmail,
+        expiresAt: claimToken.expiresAt,
+        payrunId: claimToken.payrunId,
+        orgIdHex: org.orgIdHex,
+        payrunIdHex: payrun.payrunIdHex,
+        merkleRootHex: payrun.merkleRootHex,
+        zkVerifierProgramId: org.zkVerifierProgramId,
+        incoProgramId: org.incoProgramId,
+      });
+    }
+
+    return NextResponse.json({ error: 'Claim data incomplete' }, { status: 500 });
   } catch (error) {
     console.error('Get claim package error:', error);
     return NextResponse.json({ error: 'Failed to get claim package' }, { status: 500 });

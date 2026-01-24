@@ -41,8 +41,9 @@ export const MERKLE_TREE_DEPTH = 20;
 
 export const MAX_EMPLOYEES_PER_PAYRUN = 2 ** MERKLE_TREE_DEPTH;
 
-export const PUBLIC_INPUTS_SCHEMA_VERSION = 4;
-export const PUBLIC_INPUTS_LEN_V4 = 32; // SHA256 hash of all public inputs
+export const PUBLIC_INPUTS_SCHEMA_VERSION = 5;
+export const PUBLIC_INPUTS_LEN_V5 = 44;
+export const PUBLIC_INPUTS_LEN_V4 = 44;
 export const PUBLIC_INPUTS_LEN_V3 = 1036;
 export const PUBLIC_INPUTS_LEN_V2 = 192;
 

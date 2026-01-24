@@ -28,10 +28,10 @@ export async function GET(
             worker: {
               select: {
                 id: true,
+                email: true,
                 wallet: true,
                 displayName: true,
                 type: true,
-                claimerConfAccount: true,
               },
             },
             claimTokens: {
@@ -57,7 +57,8 @@ export async function GET(
       .filter((ps) => ps.claimTokens.length > 0)
       .map((ps) => ({
         payslipId: ps.id,
-        claimerConfAccount: ps.worker?.claimerConfAccount || ps.worker?.wallet || '',
+        email: ps.worker?.email || '',
+        displayName: ps.worker?.displayName || '',
         hasActiveToken: ps.claimTokens.length > 0,
         expiresAt: ps.claimTokens[0]?.expiresAt,
       }));

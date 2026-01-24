@@ -18,6 +18,7 @@
     "@zurpay/db": "*",
     "@zurpay/sdk": "*",
     "next": "14.2.0",
+    "next-auth": "^4.24.13",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

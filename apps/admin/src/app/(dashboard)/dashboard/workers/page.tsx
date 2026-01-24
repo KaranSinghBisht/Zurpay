@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import Link from 'next/link';
 import { api, Worker, Org } from '../../../../lib/api';
+import { Check, Copy } from 'lucide-react';
 
 export default function WorkersPage() {
   const { publicKey } = useWallet();
@@ -94,7 +95,7 @@ export default function WorkersPage() {
           <p className="text-zinc-400 text-sm">{org.name}</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="btn-primary">
-          Add Worker
+          Invite Employee
         </button>
       </div>
 
@@ -112,6 +113,7 @@ export default function WorkersPage() {
         >
           <option value="">All Status</option>
           <option value="ACTIVE">Active</option>
+          <option value="INVITED">Invited</option>
           <option value="INACTIVE">Inactive</option>
         </select>
         <select
@@ -129,9 +131,9 @@ export default function WorkersPage() {
         <div className="glass-card rounded-xl p-8 text-center">
           <div className="text-5xl mb-4">👥</div>
           <h3 className="text-xl font-semibold mb-2">No workers yet</h3>
-          <p className="text-zinc-400 mb-6">Add your first worker to get started with payroll</p>
+          <p className="text-zinc-400 mb-6">Invite your first worker to get started with payroll</p>
           <button onClick={() => setShowAddModal(true)} className="btn-primary">
-            Add Worker
+            Invite Employee
           </button>
         </div>
       ) : (
@@ -164,31 +166,43 @@ export default function WorkersPage() {
                 <tr key={worker.id} className="hover:bg-zinc-800/30">
                   <td className="px-6 py-4">
                     <div>
-                      <div className="font-medium">
-                        {worker.displayName || worker.wallet.slice(0, 8) + '...'}
+                      <div className="font-medium text-white">
+                        {worker.email || worker.displayName || '(No email)'}
                       </div>
-                      <div className="text-xs text-zinc-500 font-mono">
-                        {worker.wallet.slice(0, 12)}...{worker.wallet.slice(-8)}
+                      <div className="text-xs text-zinc-500 font-mono mt-0.5">
+                        {worker.wallet ? (
+                          <>
+                            {worker.wallet.slice(0, 6)}...{worker.wallet.slice(-4)}
+                          </>
+                        ) : (
+                          '(No wallet linked)'
+                        )}
                       </div>
-                      {worker.email && <div className="text-xs text-zinc-500">{worker.email}</div>}
+                      {worker.displayName && worker.displayName !== worker.email && (
+                        <div className="text-xs text-zinc-500">{worker.displayName}</div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${worker.type === 'EMPLOYEE'
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        worker.type === 'EMPLOYEE'
                           ? 'bg-blue-900/50 text-blue-300'
                           : 'bg-purple-900/50 text-purple-300'
-                        }`}
+                      }`}
                     >
                       {worker.type}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${worker.status === 'ACTIVE'
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        worker.status === 'ACTIVE'
                           ? 'bg-emerald-900/50 text-emerald-300'
-                          : 'bg-zinc-700 text-zinc-400'
-                        }`}
+                          : (worker.status as string) === 'INVITED'
+                            ? 'bg-amber-900/50 text-amber-300'
+                            : 'bg-zinc-700 text-zinc-400'
+                      }`}
                     >
                       {worker.status}
                     </span>
@@ -253,8 +267,6 @@ function AddWorkerModal({
   onSuccess: () => void;
 }) {
   const [formData, setFormData] = useState({
-    wallet: '',
-    claimerConfAccount: '',
     type: 'EMPLOYEE' as 'EMPLOYEE' | 'CONTRACTOR',
     displayName: '',
     email: '',
@@ -263,6 +275,10 @@ function AddWorkerModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ inviteUrl: string; expiresAt: string } | null>(
+    null
+  );
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,68 +286,109 @@ function AddWorkerModal({
     setError(null);
 
     try {
-      const worker = await api.workers.create(
-        orgId,
-        {
-          wallet: formData.wallet,
-          claimerConfAccount: formData.claimerConfAccount || undefined,
-          type: formData.type,
-          displayName: formData.displayName || undefined,
-          email: formData.email || undefined,
-        },
-        wallet
-      );
+      const payload: any = {
+        email: formData.email,
+        type: formData.type,
+      };
+
+      if (formData.displayName) payload.displayName = formData.displayName;
 
       if (formData.rateAmount) {
-        const amountInMicroUnits = (parseFloat(formData.rateAmount) * 1_000_000).toString();
-        await api.workers.createCompPlan(
-          orgId,
-          worker.id,
-          {
-            rateAmount: amountInMicroUnits,
-            schedule: formData.schedule,
-            currency: 'USDC',
-          },
-          wallet
-        );
+        payload.rateAmount = (parseFloat(formData.rateAmount) * 1_000_000).toString();
+        payload.schedule = formData.schedule;
+        payload.currency = 'USDC';
       }
 
-      onSuccess();
+      const response = await fetch(`/api/v1/orgs/${orgId}/workers/invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-wallet': wallet,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to invite worker');
+      }
+
+      const data = await response.json();
+      setInviteResult({
+        inviteUrl: data.inviteUrl,
+        expiresAt: data.expiresAt,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create worker');
+      setError(err instanceof Error ? err.message : 'Failed to invite worker');
     } finally {
       setLoading(false);
     }
   };
 
+  const copyToClipboard = () => {
+    if (inviteResult?.inviteUrl) {
+      navigator.clipboard.writeText(inviteResult.inviteUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  if (inviteResult) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md border border-zinc-800">
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-12 h-12 bg-emerald-900/30 rounded-full flex items-center justify-center mb-4">
+              <Check className="w-6 h-6 text-emerald-500" />
+            </div>
+            <h3 className="text-xl font-semibold text-white">Invite Sent!</h3>
+            <p className="text-zinc-400 text-sm mt-2">
+              Share this link with {formData.displayName || formData.email} to let them claim their
+              account.
+            </p>
+          </div>
+
+          <div className="bg-zinc-950 rounded-lg border border-zinc-800 p-3 mb-6">
+            <div className="flex items-center justify-between gap-3">
+              <code className="text-xs text-zinc-300 font-mono truncate flex-1">
+                {inviteResult.inviteUrl}
+              </code>
+              <button
+                onClick={copyToClipboard}
+                className="p-2 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white"
+                title="Copy link"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            onClick={onSuccess}
+            className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors font-medium"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md border border-zinc-800">
-        <h3 className="text-xl font-semibold mb-4">Add Worker</h3>
+        <h3 className="text-xl font-semibold mb-4">Invite Employee</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Wallet Address *</label>
+            <label className="block text-sm font-medium text-zinc-400 mb-1">Email Address *</label>
             <input
-              type="text"
+              type="email"
               required
-              value={formData.wallet}
-              onChange={(e) => setFormData({ ...formData, wallet: e.target.value })}
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500 font-mono text-sm"
-              placeholder="Base58 wallet address"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">
-              Confidential Account (Inco)
-            </label>
-            <input
-              type="text"
-              value={formData.claimerConfAccount}
-              onChange={(e) => setFormData({ ...formData, claimerConfAccount: e.target.value })}
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500 font-mono text-sm"
-              placeholder="Optional - for payout destination"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500"
+              placeholder="employee@company.com"
             />
           </div>
 
@@ -350,24 +407,17 @@ function AddWorkerModal({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-400 mb-1">Display Name</label>
+              <label className="block text-sm font-medium text-zinc-400 mb-1">
+                Display Name (Optional)
+              </label>
               <input
                 type="text"
                 value={formData.displayName}
                 onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500"
+                placeholder="John Doe"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-400 mb-1">Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500"
-            />
           </div>
 
           <div className="border-t border-zinc-800 pt-4">
@@ -426,7 +476,7 @@ function AddWorkerModal({
               disabled={loading}
               className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors"
             >
-              {loading ? 'Creating...' : 'Add Worker'}
+              {loading ? 'Sending Invite...' : 'Send Invite'}
             </button>
           </div>
         </form>

@@ -8,9 +8,12 @@ use inco_lightning::types::Euint128;
 use solana_program::hash::hash;
 use solana_program::program::invoke;
 
-pub const PUBLIC_INPUTS_SCHEMA_VERSION: u8 = 4;
+pub const PUBLIC_INPUTS_SCHEMA_VERSION: u8 = 5;
 
-/// V4: Single Field element (12-byte header + 1 × 32 bytes = 44 bytes)
+/// sha256(merkle_root || nullifier || payout_pubkey_hash || org_id || salary_commitment) → 160 bytes → Field
+pub const PUBLIC_INPUTS_LEN_V5: usize = 44;
+
+/// sha256(merkle_root || nullifier || payout_pubkey_hash || org_id || salary_commitment || ciphertext_hash) → 192 bytes → Field (legacy)
 pub const PUBLIC_INPUTS_LEN_V4: usize = 44;
 
 /// V3: 32 field elements (12-byte header + 32 × 32 bytes = 1036 bytes) - TOO LARGE FOR TX
@@ -88,6 +91,7 @@ pub fn handler<'info>(
     proof_bytes: Vec<u8>,
     public_inputs: Vec<u8>,
     encrypted_amount: Vec<u8>,
+    schema_version: u8,
 ) -> Result<()> {
     let org = &ctx.accounts.org;
     let payrun = &mut ctx.accounts.payrun;
@@ -107,6 +111,7 @@ pub fn handler<'info>(
         &org.org_id,
         &salary_commitment,
         &ciphertext_hash,
+        schema_version,
     )?;
 
     let actual_payout_hash = hash(ctx.accounts.claimer_conf_account.key().as_ref());
@@ -167,9 +172,18 @@ fn verify_public_inputs(
     expected_org_id: &[u8; 32],
     expected_salary_commitment: &[u8; 32],
     expected_ciphertext_hash: &[u8; 32],
+    schema_version: u8,
 ) -> Result<()> {
-    match public_inputs.len() {
-        PUBLIC_INPUTS_LEN_V4 => verify_public_inputs_v4(
+    match (public_inputs.len(), schema_version) {
+        (PUBLIC_INPUTS_LEN_V5, 5) => verify_public_inputs_v5(
+            public_inputs,
+            expected_root,
+            expected_nullifier,
+            expected_payout_hash,
+            expected_org_id,
+            expected_salary_commitment,
+        ),
+        (PUBLIC_INPUTS_LEN_V4, 4) => verify_public_inputs_v4(
             public_inputs,
             expected_root,
             expected_nullifier,
@@ -178,7 +192,7 @@ fn verify_public_inputs(
             expected_salary_commitment,
             expected_ciphertext_hash,
         ),
-        PUBLIC_INPUTS_LEN_V2 => verify_public_inputs_v2(
+        (PUBLIC_INPUTS_LEN_V2, 2) => verify_public_inputs_v2(
             public_inputs,
             expected_root,
             expected_nullifier,
@@ -187,7 +201,7 @@ fn verify_public_inputs(
             expected_salary_commitment,
             expected_ciphertext_hash,
         ),
-        PUBLIC_INPUTS_LEN_V3 => verify_public_inputs_v3(
+        (PUBLIC_INPUTS_LEN_V3, 3) => verify_public_inputs_v3(
             public_inputs,
             expected_root,
             expected_nullifier,
@@ -197,10 +211,46 @@ fn verify_public_inputs(
             expected_ciphertext_hash,
         ),
         _ => {
-            msg!("Invalid public inputs length: {}", public_inputs.len());
+            msg!(
+                "Invalid public inputs: len={}, version={}",
+                public_inputs.len(),
+                schema_version
+            );
             Err(ZurpayError::PublicInputsVersionMismatch.into())
         }
     }
+}
+
+fn verify_public_inputs_v5(
+    public_inputs: &[u8],
+    expected_root: &[u8; 32],
+    expected_nullifier: &[u8; 32],
+    expected_payout_hash: &[u8; 32],
+    expected_org_id: &[u8; 32],
+    expected_salary_commitment: &[u8; 32],
+) -> Result<()> {
+    let extracted_field = &public_inputs[12..44];
+
+    let mut preimage = [0u8; 160];
+    preimage[0..32].copy_from_slice(expected_root);
+    preimage[32..64].copy_from_slice(expected_nullifier);
+    preimage[64..96].copy_from_slice(expected_payout_hash);
+    preimage[96..128].copy_from_slice(expected_org_id);
+    preimage[128..160].copy_from_slice(expected_salary_commitment);
+
+    let expected_hash = hash(&preimage);
+    let expected_hash_bytes = expected_hash.to_bytes();
+
+    let mut expected_field = [0u8; 32];
+    expected_field[0] = 0;
+    expected_field[1..32].copy_from_slice(&expected_hash_bytes[1..32]);
+
+    require!(
+        extracted_field == expected_field,
+        ZurpayError::PublicInputsMismatch
+    );
+
+    Ok(())
 }
 
 fn verify_public_inputs_v2(

@@ -13,6 +13,7 @@ import {
   PDA_SEEDS,
   PUBLIC_INPUTS_LEN_V3,
   PUBLIC_INPUTS_LEN_V4,
+  PUBLIC_INPUTS_LEN_V5,
   PUBLIC_INPUTS_LEN_V2,
   DEFAULT_INCO_PROGRAM_ID,
 } from './constants';
@@ -104,10 +105,15 @@ export function validateClaimPackage(claimPackage: ClaimPackageV2): {
     1
   );
 
-  const validLengths = [PUBLIC_INPUTS_LEN_V4, 44, PUBLIC_INPUTS_LEN_V2, PUBLIC_INPUTS_LEN_V3];
+  const validLengths = [
+    PUBLIC_INPUTS_LEN_V5,
+    PUBLIC_INPUTS_LEN_V4,
+    PUBLIC_INPUTS_LEN_V2,
+    PUBLIC_INPUTS_LEN_V3,
+  ];
   if (!validLengths.includes(publicInputsBytes.length)) {
     throw new Error(
-      `ClaimPackage validation failed: publicInputsB64 decoded to ${publicInputsBytes.length} bytes (expected 32 or 44 for V4, ${PUBLIC_INPUTS_LEN_V2} for V2, or ${PUBLIC_INPUTS_LEN_V3} for V3)`
+      `ClaimPackage validation failed: publicInputsB64 decoded to ${publicInputsBytes.length} bytes (expected ${PUBLIC_INPUTS_LEN_V5} for V5, ${PUBLIC_INPUTS_LEN_V2} for V2, or ${PUBLIC_INPUTS_LEN_V3} for V3)`
     );
   }
 
@@ -140,7 +146,8 @@ export function buildClaimInstruction(
   accounts: ClaimAccounts,
   claimer: PublicKey,
   programId: PublicKey = ZURPAY_PROGRAM_ID,
-  incoAllowanceAccounts?: IncoAllowanceAccounts
+  incoAllowanceAccounts?: IncoAllowanceAccounts,
+  schemaVersion: number = 5
 ): TransactionInstruction {
   const validated = validateClaimPackage(claimPackage);
   const {
@@ -157,33 +164,27 @@ export function buildClaimInstruction(
 
   const nullifierPda = deriveNullifierPda(orgId, payrunId, nullifierHash, programId);
 
-  // Anchor instruction discriminator for "claim"
-  // This is the first 8 bytes of sha256("global:claim")
   const discriminator = Buffer.from([62, 198, 214, 193, 213, 159, 108, 210]);
 
-  // Helper to encode u32 as little-endian buffer
   const encodeU32LE = (value: number): Buffer => {
     const buf = Buffer.alloc(4);
     buf.writeUInt32LE(value, 0);
     return buf;
   };
 
-  // Encode instruction data
   const data = Buffer.concat([
     discriminator,
     Buffer.from(nullifierHash),
     Buffer.from(payoutPubkeyHash),
     Buffer.from(salaryCommitment),
     Buffer.from(ciphertextHash),
-    // proof_bytes as Vec<u8>: 4 bytes length (LE) + data
     encodeU32LE(proofBytes.length),
     Buffer.from(proofBytes),
-    // public_inputs as Vec<u8>: 4 bytes length (LE) + data
     encodeU32LE(publicInputsBytes.length),
     Buffer.from(publicInputsBytes),
-    // encrypted_amount as Vec<u8>: 4 bytes length (LE) + data
     encodeU32LE(encryptedAmount.length),
     Buffer.from(encryptedAmount),
+    Buffer.from([schemaVersion]),
   ]);
 
   const keys = [
@@ -260,7 +261,8 @@ export async function submitClaimFromPackage(
   claimPackage: ClaimPackageV2,
   accounts: ClaimAccounts,
   programId: PublicKey = ZURPAY_PROGRAM_ID,
-  incoAllowanceAccounts?: IncoAllowanceAccounts
+  incoAllowanceAccounts?: IncoAllowanceAccounts,
+  schemaVersion: number = 5
 ): Promise<string> {
   if (!verifyClaimerMatch(accounts.claimerConfAccount, claimPackage)) {
     throw new Error(
@@ -273,7 +275,8 @@ export async function submitClaimFromPackage(
     accounts,
     wallet.publicKey,
     programId,
-    incoAllowanceAccounts
+    incoAllowanceAccounts,
+    schemaVersion
   );
 
   const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({

@@ -15,7 +15,6 @@ import {
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
 } from '@zurpay/sdk';
 import { ConfettiCelebration } from '../../../components/ConfettiCelebration';
-import { BalanceViewer } from '../../../components/BalanceViewer';
 import { employeeApi } from '../../../lib/api';
 
 type ClaimStatus =
@@ -41,7 +40,6 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
   const [claimPackage, setClaimPackage] = useState<ClaimPackageV2 | null>(null);
   const [error, setError] = useState<string>('');
   const [txSignature, setTxSignature] = useState<string>('');
-  const [balanceHandle, setBalanceHandle] = useState<string | null>(null);
 
   // Fetch claim package on mount
   useEffect(() => {
@@ -161,18 +159,6 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
 
       setTxSignature(signature);
 
-      const confAccountInfo = await connection.getAccountInfo(employeeConf);
-      if (confAccountInfo && confAccountInfo.data.length >= 88) {
-        const balanceBytes = confAccountInfo.data.slice(72, 88);
-        let handle = BigInt(0);
-        for (let i = 0; i < 16; i++) {
-          handle = handle | (BigInt(balanceBytes[i]) << BigInt(i * 8));
-        }
-        const handleHex = '0x' + handle.toString(16).padStart(32, '0');
-        console.log('Employee balance handle:', handleHex);
-        setBalanceHandle(handleHex);
-      }
-
       try {
         await employeeApi.claims.markUsed(token, signature);
       } catch (markError) {
@@ -282,32 +268,20 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
           <>
             <ConfettiCelebration isActive={true} />
             <div className="bg-emerald-900/50 border border-emerald-700 rounded-xl p-6 max-w-md">
-              <h3 className="text-xl font-bold text-emerald-300 mb-4">🎉 Claim Successful!</h3>
+              <h3 className="text-xl font-bold text-emerald-300 mb-4">Claim Successful!</h3>
               <p className="text-emerald-300/80 mb-4">
-                Your salary has been claimed successfully. The funds will appear in your
-                confidential account.
+                Your salary has been transferred to your confidential account.
               </p>
 
-              {balanceHandle && (
-                <div className="mb-4">
-                  <BalanceViewer
-                    encryptedHandle={balanceHandle}
-                    label="Claimed Amount"
-                    decimals={6}
-                    tokenSymbol="USDC"
-                  />
-                </div>
-              )}
-
               <div className="p-3 bg-zinc-900/50 rounded-lg">
-                <p className="text-xs text-zinc-400 mb-1">Transaction Signature</p>
+                <p className="text-xs text-zinc-400 mb-1">Transaction</p>
                 <a
                   href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-emerald-400 text-sm hover:underline font-mono break-all"
                 >
-                  {txSignature}
+                  {txSignature.slice(0, 20)}...{txSignature.slice(-20)}
                 </a>
               </div>
             </div>

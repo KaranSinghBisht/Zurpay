@@ -54,6 +54,7 @@ pub mod zurpay_payroll {
         proof_bytes: Vec<u8>,
         public_inputs: Vec<u8>,
         encrypted_amount: Vec<u8>,
+        schema_version: u8,
     ) -> Result<()> {
         instructions::claim::handler(
             ctx,
@@ -64,6 +65,7 @@ pub mod zurpay_payroll {
             proof_bytes,
             public_inputs,
             encrypted_amount,
+            schema_version,
         )
     }
 

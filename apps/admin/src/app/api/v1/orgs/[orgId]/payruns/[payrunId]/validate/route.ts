@@ -1,30 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash, randomBytes } from 'crypto';
-import { spawn } from 'child_process';
-import { writeFileSync, readFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import bs58 from 'bs58';
-import { PublicKey } from '@solana/web3.js';
+import { createHash, randomBytes, createCipheriv, createDecipheriv } from 'crypto';
 import { prisma, MemberRole } from '@/lib/db';
 import { requireAuth, requireOrgAccess } from '@/lib/auth';
 import { encryptAmountForInco, hashToken } from '@/lib/crypto';
-import type { ClaimPackageV2 } from '@zurpay/sdk';
-
-const ZURPAY_PROGRAM_ID = new PublicKey('Cf9tReQuvS6cb4awYPCVozQnCWYdqia62yRShJs2URy9');
-const EMPLOYEE_CONF_SEED = Buffer.from('employee_conf');
-
-function deriveEmployeeConfPda(orgId: Uint8Array, employeeWallet: PublicKey): PublicKey {
-  const [pda] = PublicKey.findProgramAddressSync(
-    [EMPLOYEE_CONF_SEED, orgId, employeeWallet.toBuffer()],
-    ZURPAY_PROGRAM_ID
-  );
-  return pda;
-}
 
 const MERKLE_DEPTH = 20;
-const SUNSPOT_BIN = process.env.SUNSPOT_BIN || '/Users/kryptos/sunspot/go/sunspot';
-const CIRCUIT_DIR =
-  process.env.CIRCUIT_DIR || join(process.cwd(), '../../circuits/claim_eligibility');
 
 function sha256(data: Uint8Array): Uint8Array {
   return new Uint8Array(createHash('sha256').update(data).digest());
@@ -42,6 +22,16 @@ function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
+}
+
+const ENCRYPTION_KEY = process.env.PAYROLL_ENCRYPTION_KEY || 'change-me-please-use-32-chars-or';
+
+function encryptSecret(secret: Uint8Array): string {
+  const iv = randomBytes(16);
+  const key = Buffer.from(ENCRYPTION_KEY.slice(0, 32).padEnd(32, '0'));
+  const cipher = createCipheriv('aes-256-cbc', key, iv);
+  const encrypted = Buffer.concat([cipher.update(Buffer.from(secret)), cipher.final()]);
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
 }
 
 function buildMerkleTree(leaves: Uint8Array[]): {
@@ -98,157 +88,6 @@ function buildMerkleTree(leaves: Uint8Array[]): {
   return { root, paths, indices };
 }
 
-interface WitnessInputs {
-  merkle_root: number[];
-  nullifier: number[];
-  payout_pubkey_hash: number[];
-  org_id: number[];
-  salary_commitment: number[];
-  ciphertext_hash: number[];
-  employee_secret: number[];
-  payrun_id: number[];
-  merkle_path: number[][];
-  path_indices: boolean[];
-  payout_pubkey: number[];
-}
-
-function computePublicInputsHash(inputs: WitnessInputs): Uint8Array {
-  const combined = Buffer.concat([
-    Buffer.from(inputs.merkle_root),
-    Buffer.from(inputs.nullifier),
-    Buffer.from(inputs.payout_pubkey_hash),
-    Buffer.from(inputs.org_id),
-    Buffer.from(inputs.salary_commitment),
-    Buffer.from(inputs.ciphertext_hash),
-  ]);
-  return sha256(combined);
-}
-
-function formatByteArray(arr: number[]): string {
-  return '[' + arr.map((b) => `"${b}"`).join(', ') + ']';
-}
-
-function format2DByteArray(arr: number[][]): string {
-  return '[' + arr.map((row) => formatByteArray(row)).join(', ') + ']';
-}
-
-function formatBoolArray(arr: boolean[]): string {
-  return '[' + arr.map((b) => `"${b ? 1 : 0}"`).join(', ') + ']';
-}
-
-function bytes31ToFieldString(bytes: Uint8Array): string {
-  let result = BigInt(0);
-  for (let i = 1; i < bytes.length; i++) {
-    result = result * 256n + BigInt(bytes[i]);
-  }
-  return result.toString();
-}
-
-function formatProverToml(inputs: WitnessInputs): string {
-  const publicInputsHashBytes = computePublicInputsHash(inputs);
-  const publicInputsHashField = bytes31ToFieldString(publicInputsHashBytes);
-  const lines: string[] = [];
-
-  lines.push(`public_inputs_hash = "${publicInputsHashField}"`);
-  lines.push(`merkle_root = ${formatByteArray(inputs.merkle_root)}`);
-  lines.push(`nullifier = ${formatByteArray(inputs.nullifier)}`);
-  lines.push(`payout_pubkey_hash = ${formatByteArray(inputs.payout_pubkey_hash)}`);
-  lines.push(`org_id = ${formatByteArray(inputs.org_id)}`);
-  lines.push(`salary_commitment = ${formatByteArray(inputs.salary_commitment)}`);
-  lines.push(`ciphertext_hash = ${formatByteArray(inputs.ciphertext_hash)}`);
-  lines.push(`employee_secret = ${formatByteArray(inputs.employee_secret)}`);
-  lines.push(`payrun_id = ${formatByteArray(inputs.payrun_id)}`);
-  lines.push(`payout_pubkey = ${formatByteArray(inputs.payout_pubkey)}`);
-  lines.push(`merkle_path = ${format2DByteArray(inputs.merkle_path)}`);
-  lines.push(`path_indices = ${formatBoolArray(inputs.path_indices)}`);
-
-  return lines.join('\n');
-}
-
-function runCommand(
-  bin: string,
-  args: string[],
-  cwd: string
-): Promise<{ stdout: string; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(bin, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = '';
-    let stderr = '';
-
-    proc.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    proc.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    proc.on('close', (code) => {
-      if (code === 0) {
-        resolve({ stdout, stderr });
-      } else {
-        reject(new Error(`${bin} exited with code ${code}: ${stderr || stdout}`));
-      }
-    });
-
-    proc.on('error', (err) => {
-      reject(new Error(`Failed to run ${bin}: ${err.message}`));
-    });
-  });
-}
-
-async function generateRealProof(
-  inputs: WitnessInputs,
-  sessionId: string
-): Promise<{ proofB64: string; publicInputsB64: string }> {
-  const proverTomlPath = join(CIRCUIT_DIR, 'Prover.toml');
-  const acirPath = join(CIRCUIT_DIR, 'target', 'claim_eligibility.json');
-  const ccsPath = join(CIRCUIT_DIR, 'target', 'claim_eligibility.ccs');
-  const pkPath = join(CIRCUIT_DIR, 'target', 'claim_eligibility.pk');
-  const witnessPath = join(CIRCUIT_DIR, 'target', `claim_eligibility_${sessionId}.gz`);
-  const publicWitnessPath = join(CIRCUIT_DIR, 'target', 'claim_eligibility.pw');
-
-  if (!existsSync(pkPath)) {
-    throw new Error(`Proving key not found at ${pkPath}. Run 'sunspot setup' first.`);
-  }
-
-  const proverTomlBackup = existsSync(proverTomlPath)
-    ? readFileSync(proverTomlPath, 'utf-8')
-    : null;
-
-  try {
-    const proverToml = formatProverToml(inputs);
-    writeFileSync(proverTomlPath, proverToml);
-
-    console.log(`[Prover] Generating witness for session ${sessionId}...`);
-    await runCommand(
-      'nargo',
-      ['execute', '--package', 'claim_eligibility', `claim_eligibility_${sessionId}`],
-      CIRCUIT_DIR
-    );
-
-    console.log(`[Prover] Generating proof for session ${sessionId}...`);
-    await runCommand(SUNSPOT_BIN, ['prove', acirPath, witnessPath, ccsPath, pkPath], CIRCUIT_DIR);
-
-    const proofPath = join(CIRCUIT_DIR, 'target', 'claim_eligibility.proof');
-    const proofBytes = readFileSync(proofPath);
-
-    const publicWitnessBytes = readFileSync(publicWitnessPath);
-    console.log(`[Prover] Public witness size: ${publicWitnessBytes.length} bytes`);
-
-    return {
-      proofB64: proofBytes.toString('base64'),
-      publicInputsB64: publicWitnessBytes.toString('base64'),
-    };
-  } finally {
-    if (proverTomlBackup !== null) {
-      writeFileSync(proverTomlPath, proverTomlBackup);
-    }
-    try {
-      if (existsSync(witnessPath)) unlinkSync(witnessPath);
-    } catch {}
-  }
-}
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ orgId: string; payrunId: string }> }
@@ -288,17 +127,18 @@ export async function POST(
     const leaves: Uint8Array[] = [];
     const payslipData: Array<{
       payslipId: string;
+      workerEmail: string | null;
       employeeSecret: Uint8Array;
       nullifier: Uint8Array;
       salaryCommitment: Uint8Array;
       ciphertextHash: Uint8Array;
-      payoutPubkeyHash: Uint8Array;
-      payoutPubkey: string;
       encryptedAmount: Uint8Array;
       employeeCommitment: Uint8Array;
+      leafIndex: number;
     }> = [];
 
-    for (const payslip of payrun.payslips) {
+    for (let i = 0; i < payrun.payslips.length; i++) {
+      const payslip = payrun.payslips[i];
       const employeeSecret = randomBytes(32);
       const employeeCommitment = sha256(employeeSecret);
 
@@ -308,127 +148,53 @@ export async function POST(
 
       const amountBytes = new Uint8Array(32);
       let val = amount;
-      for (let i = 31; i >= 0; i--) {
-        amountBytes[i] = Number(val & 0xffn);
+      for (let j = 31; j >= 0; j--) {
+        amountBytes[j] = Number(val & 0xffn);
         val >>= 8n;
       }
       const salaryCommitment = sha256(amountBytes);
 
-      const employeeWallet = new PublicKey(payslip.worker.wallet);
-      const employeeConfPda = deriveEmployeeConfPda(orgIdBytes, employeeWallet);
-      const payoutPubkey = employeeConfPda.toBase58();
-      const payoutPubkeyBytes = employeeConfPda.toBytes();
-      const payoutPubkeyHash = sha256(payoutPubkeyBytes);
-
       const domainSep = sha256(new Uint8Array([...orgIdBytes, ...payrunIdBytes]));
       const nullifier = sha256(new Uint8Array([...domainSep, ...employeeSecret]));
 
-      const leafPreimage = new Uint8Array(160);
+      const leafPreimage = new Uint8Array(128);
       leafPreimage.set(payrunIdBytes, 0);
       leafPreimage.set(employeeCommitment, 32);
       leafPreimage.set(salaryCommitment, 64);
       leafPreimage.set(ciphertextHash, 96);
-      leafPreimage.set(payoutPubkeyHash, 128);
       const leaf = sha256(leafPreimage);
 
       leaves.push(leaf);
       payslipData.push({
         payslipId: payslip.id,
+        workerEmail: payslip.worker.email,
         employeeSecret,
         nullifier,
         salaryCommitment,
         ciphertextHash,
-        payoutPubkeyHash,
-        payoutPubkey,
         encryptedAmount,
         employeeCommitment,
+        leafIndex: i,
       });
     }
 
     const { root, paths, indices } = buildMerkleTree(leaves);
     const merkleRootHex = bytesToHex(root);
 
-    const claimLinks: { token: string; urlPath: string; claimerConfAccount: string }[] = [];
+    const claimLinks: { token: string; urlPath: string; email: string | null }[] = [];
 
     for (let i = 0; i < payslipData.length; i++) {
       const data = payslipData[i];
       const merklePath = paths[i];
       const pathIndices = indices[i];
 
-      const sessionId = randomBytes(8).toString('hex');
-      const witnessInputs: WitnessInputs = {
-        merkle_root: Array.from(root),
-        nullifier: Array.from(data.nullifier),
-        payout_pubkey_hash: Array.from(data.payoutPubkeyHash),
-        org_id: Array.from(orgIdBytes),
-        salary_commitment: Array.from(data.salaryCommitment),
-        ciphertext_hash: Array.from(data.ciphertextHash),
-        employee_secret: Array.from(data.employeeSecret),
-        payrun_id: Array.from(payrunIdBytes),
-        merkle_path: merklePath.map((p) => Array.from(p)),
-        path_indices: pathIndices,
-        payout_pubkey: Array.from(bs58.decode(data.payoutPubkey)),
-      };
-
-      console.log(`[Validate] Generating ZK proof for payslip ${i + 1}/${payslipData.length}...`);
-
-      const useMockProver = process.env.USE_MOCK_PROVER === 'true' || !existsSync(SUNSPOT_BIN);
-      let proofB64: string;
-      let publicInputsB64: string;
-      let version: 'v2' | 'v4';
-
-      if (useMockProver) {
-        const mockProofBytes = new Uint8Array(256);
-        for (let j = 0; j < mockProofBytes.length; j++) {
-          mockProofBytes[j] = (j * 7 + 13) % 256;
-        }
-        proofB64 = Buffer.from(mockProofBytes).toString('base64');
-
-        const publicInputsBytes = Buffer.concat([
-          Buffer.from(root),
-          Buffer.from(data.nullifier),
-          Buffer.from(data.payoutPubkeyHash),
-          Buffer.from(orgIdBytes),
-          Buffer.from(data.salaryCommitment),
-          Buffer.from(data.ciphertextHash),
-        ]);
-        publicInputsB64 = publicInputsBytes.toString('base64');
-        version = 'v2';
-        console.log(`[Validate] Using mock prover (V2 format, ${publicInputsBytes.length} bytes)`);
-      } else {
-        const result = await generateRealProof(witnessInputs, sessionId);
-        proofB64 = result.proofB64;
-        publicInputsB64 = result.publicInputsB64;
-        version = 'v4';
-        console.log(`[Validate] Real proof generated (V4 format)`);
-      }
-      console.log(`[Validate] Proof generated for payslip ${i + 1}/${payslipData.length}`);
-
-      const claimPackage: ClaimPackageV2 = {
-        version,
-        orgIdHex: payrun.org.orgIdHex,
-        payrunIdHex: payrun.payrunIdHex,
-        claimerConfAccount: data.payoutPubkey,
-        treasuryConfAccount: payrun.org.treasuryConfAccount,
-        zkVerifierProgramId: payrun.org.zkVerifierProgramId,
-        incoProgramId: payrun.org.incoProgramId,
-        proofB64,
-        publicInputsB64,
-        encryptedAmountB64: Buffer.from(data.encryptedAmount).toString('base64'),
-        payoutPubkeyHashHex: bytesToHex(data.payoutPubkeyHash),
-        ciphertextHashHex: bytesToHex(data.ciphertextHash),
-        nullifierHex: bytesToHex(data.nullifier),
-        salaryCommitmentHex: bytesToHex(data.salaryCommitment),
-        merkleRootHex,
-      };
-
       const token = randomBytes(32).toString('hex');
       const tokenHashHex = hashToken(token);
 
       claimLinks.push({
         token,
-        urlPath: `/paylinks/${data.payslipId}?token=${token}`,
-        claimerConfAccount: data.payoutPubkey,
+        urlPath: `/claims/${payrun.id}?token=${token}`,
+        email: data.workerEmail,
       });
 
       await prisma.payslip.update({
@@ -442,13 +208,23 @@ export async function POST(
         },
       });
 
+      // Store proof generation data for claim time
       await prisma.claimToken.create({
         data: {
           tokenHash: tokenHashHex,
           payrunId: payrun.id,
           payslipId: data.payslipId,
           expiresAt: payrun.claimDeadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          claimPackageJson: JSON.stringify(claimPackage),
+          expectedEmail: data.workerEmail,
+          employeeSecretEnc: encryptSecret(data.employeeSecret),
+          merklePathJson: JSON.stringify(merklePath.map((p) => bytesToHex(p))),
+          pathIndicesJson: JSON.stringify(pathIndices),
+          leafIndex: data.leafIndex,
+          salaryCommitmentHex: bytesToHex(data.salaryCommitment),
+          ciphertextHashHex: bytesToHex(data.ciphertextHash),
+          employeeCommitmentHex: bytesToHex(data.employeeCommitment),
+          nullifierHex: bytesToHex(data.nullifier),
+          encryptedAmountB64: Buffer.from(data.encryptedAmount).toString('base64'),
         },
       });
     }
@@ -464,6 +240,7 @@ export async function POST(
     return NextResponse.json({
       merkleRootHex,
       claimLinks,
+      message: 'Payrun validated. Proofs will be generated at claim time for privacy.',
     });
   } catch (error) {
     console.error('Validate payrun error:', error);
