@@ -1,14 +1,14 @@
-use anchor_lang::prelude::*;
-use crate::state::Org;
 use crate::error::ZurpayError;
-use crate::registry::{is_approved_verifier, is_approved_inco};
+use crate::registry::{is_approved_inco, is_approved_verifier};
+use crate::state::Org;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 #[instruction(org_id: [u8; 32])]
 pub struct InitOrg<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
-    
+
     #[account(
         init,
         payer = admin,
@@ -17,7 +17,7 @@ pub struct InitOrg<'info> {
         bump
     )]
     pub org: Account<'info, Org>,
-    
+
     pub system_program: Program<'info, System>,
 }
 
@@ -32,7 +32,7 @@ pub fn handler(
         is_approved_verifier(&zk_verifier_program_id),
         ZurpayError::VerifierNotInRegistry
     );
-    
+
     require!(
         is_approved_inco(&inco_program_id),
         ZurpayError::IncoNotInRegistry
@@ -40,7 +40,7 @@ pub fn handler(
 
     let org = &mut ctx.accounts.org;
     let clock = Clock::get()?;
-    
+
     org.org_id = org_id;
     org.admin = ctx.accounts.admin.key();
     org.treasury_conf_account = treasury_conf_account;
@@ -49,7 +49,7 @@ pub fn handler(
     org.payrun_counter = 0;
     org.created_at = clock.unix_timestamp;
     org.bump = ctx.bumps.org;
-    
+
     emit!(OrgInitialized {
         org_id,
         admin: org.admin,
@@ -57,7 +57,7 @@ pub fn handler(
         zk_verifier_program_id,
         inco_program_id,
     });
-    
+
     Ok(())
 }
 

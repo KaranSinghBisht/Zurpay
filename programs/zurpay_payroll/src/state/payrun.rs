@@ -23,11 +23,11 @@ pub struct Payrun {
 
 impl Payrun {
     pub const SEED_PREFIX: &'static [u8] = b"payrun";
-    
+
     pub fn is_active(&self) -> bool {
         self.status == PayrunStatus::Active
     }
-    
+
     pub fn is_expired(&self, current_time: i64) -> bool {
         current_time > self.claim_deadline
     }

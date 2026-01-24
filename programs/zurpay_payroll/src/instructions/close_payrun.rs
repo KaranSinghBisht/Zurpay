@@ -1,19 +1,19 @@
-use anchor_lang::prelude::*;
-use crate::state::{Org, Payrun, PayrunStatus};
 use crate::error::ZurpayError;
+use crate::state::{Org, Payrun, PayrunStatus};
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct ClosePayrun<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
-    
+
     #[account(
         seeds = [Org::SEED_PREFIX, org.org_id.as_ref()],
         bump = org.bump,
         constraint = org.admin == admin.key() @ ZurpayError::Unauthorized
     )]
     pub org: Account<'info, Org>,
-    
+
     #[account(
         mut,
         seeds = [Payrun::SEED_PREFIX, org.org_id.as_ref(), payrun.payrun_id.as_ref()],
@@ -27,14 +27,14 @@ pub struct ClosePayrun<'info> {
 pub fn handler(ctx: Context<ClosePayrun>) -> Result<()> {
     let payrun = &mut ctx.accounts.payrun;
     let clock = Clock::get()?;
-    
+
     require!(
         payrun.is_expired(clock.unix_timestamp),
         ZurpayError::PayrunNotExpired
     );
-    
+
     payrun.status = PayrunStatus::Completed;
-    
+
     emit!(PayrunClosed {
         org_id: ctx.accounts.org.org_id,
         payrun_id: payrun.payrun_id,
@@ -42,7 +42,7 @@ pub fn handler(ctx: Context<ClosePayrun>) -> Result<()> {
         total_employees: payrun.total_employees,
         closed_at: clock.unix_timestamp,
     });
-    
+
     Ok(())
 }
 

@@ -82,4 +82,16 @@ pub enum ZurpayError {
 
     #[msg("Invalid account data - cannot read encrypted balance")]
     InvalidAccountData,
+
+    #[msg("Treasury does not belong to this organization")]
+    TreasuryOrgMismatch,
+
+    #[msg("Unauthorized - only org admin can perform this action")]
+    UnauthorizedAdmin,
+
+    #[msg("Claimer conf account owner does not match claimer")]
+    ClaimerMismatch,
+
+    #[msg("Claimer conf account org_id does not match")]
+    ClaimerOrgMismatch,
 }

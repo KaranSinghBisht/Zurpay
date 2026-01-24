@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 
 pub mod error;
 pub mod instructions;
-pub mod state;
 pub mod registry;
+pub mod state;
 
 use instructions::*;
 
@@ -20,7 +20,13 @@ pub mod zurpay_payroll {
         zk_verifier_program_id: Pubkey,
         inco_program_id: Pubkey,
     ) -> Result<()> {
-        instructions::init_org::handler(ctx, org_id, treasury_conf_account, zk_verifier_program_id, inco_program_id)
+        instructions::init_org::handler(
+            ctx,
+            org_id,
+            treasury_conf_account,
+            zk_verifier_program_id,
+            inco_program_id,
+        )
     }
 
     pub fn set_payrun(
@@ -30,7 +36,13 @@ pub mod zurpay_payroll {
         total_employees: u32,
         claim_deadline: i64,
     ) -> Result<()> {
-        instructions::set_payrun::handler(ctx, payrun_id, merkle_root, total_employees, claim_deadline)
+        instructions::set_payrun::handler(
+            ctx,
+            payrun_id,
+            merkle_root,
+            total_employees,
+            claim_deadline,
+        )
     }
 
     pub fn claim<'info>(
@@ -43,7 +55,16 @@ pub mod zurpay_payroll {
         public_inputs: Vec<u8>,
         encrypted_amount: Vec<u8>,
     ) -> Result<()> {
-        instructions::claim::handler(ctx, nullifier_hash, payout_pubkey_hash, salary_commitment, ciphertext_hash, proof_bytes, public_inputs, encrypted_amount)
+        instructions::claim::handler(
+            ctx,
+            nullifier_hash,
+            payout_pubkey_hash,
+            salary_commitment,
+            ciphertext_hash,
+            proof_bytes,
+            public_inputs,
+            encrypted_amount,
+        )
     }
 
     pub fn close_payrun(ctx: Context<ClosePayrun>) -> Result<()> {
@@ -52,5 +73,20 @@ pub mod zurpay_payroll {
 
     pub fn cancel_payrun(ctx: Context<CancelPayrun>) -> Result<()> {
         instructions::cancel_payrun::handler(ctx)
+    }
+
+    pub fn init_treasury(ctx: Context<InitTreasury>) -> Result<()> {
+        instructions::init_treasury::handler(ctx)
+    }
+
+    pub fn deposit_treasury(
+        ctx: Context<DepositTreasury>,
+        encrypted_amount: Vec<u8>,
+    ) -> Result<()> {
+        instructions::deposit_treasury::handler(ctx, encrypted_amount)
+    }
+
+    pub fn init_employee_conf(ctx: Context<InitEmployeeConf>) -> Result<()> {
+        instructions::init_employee_conf::handler(ctx)
     }
 }

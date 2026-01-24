@@ -14,13 +14,7 @@ pub fn is_approved_inco(_program_id: &Pubkey) -> bool {
 /// Production/devnet mode: validate against whitelist
 #[cfg(all(feature = "devnet", not(feature = "testing")))]
 pub mod approved_programs {
-    pub const ZK_VERIFIER_PROGRAMS: &[&str] = &[
-        "SunspotDEV11111111111111111111111111111111",
-        "SunspotDEV22222222222222222222222222222222",
-        "ZKVrfy1111111111111111111111111111111111111",
-        "8yseT439EGMSg2JnceSHo4AdxVoG8i7KdYovDRDeN5Gj",
-        "22KzTftAeoPzCjhd8Bo5Bh4T4spEmMg1BfUVXfvAwd54",
-    ];
+    pub const ZK_VERIFIER_PROGRAMS: &[&str] = &["HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS"];
 
     pub const INCO_PROGRAMS: &[&str] = &[
         "IncoDEV1111111111111111111111111111111111",

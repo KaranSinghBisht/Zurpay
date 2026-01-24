@@ -1,5 +1,5 @@
 use crate::error::ZurpayError;
-use crate::state::{Nullifier, Org, Payrun};
+use crate::state::{EmployeeConfAccount, Nullifier, Org, Payrun, TreasuryAccount};
 use anchor_lang::prelude::*;
 use inco_lightning::cpi::accounts::{Allow, Operation};
 use inco_lightning::cpi::{allow, e_add, e_sub, new_euint128};
@@ -57,16 +57,24 @@ pub struct Claim<'info> {
     #[account(constraint = inco_program.key() == org.inco_program_id @ ZurpayError::InvalidIncoProgram)]
     pub inco_program: UncheckedAccount<'info>,
 
-    /// CHECK: Validated against org.treasury_conf_account - Inco confidential account
+    /// Treasury account with encrypted balance - PDA derived from org_id
     #[account(
         mut,
-        constraint = treasury_conf_account.key() == org.treasury_conf_account @ ZurpayError::InvalidTreasury
+        seeds = [TreasuryAccount::SEED_PREFIX, org.org_id.as_ref()],
+        bump = treasury.bump,
+        constraint = treasury.org_id == org.org_id @ ZurpayError::TreasuryOrgMismatch
     )]
-    pub treasury_conf_account: UncheckedAccount<'info>,
+    pub treasury: Account<'info, TreasuryAccount>,
 
-    /// CHECK: Claimer's Inco confidential account - validated via payout_pubkey_hash in ZK proof
-    #[account(mut)]
-    pub claimer_conf_account: UncheckedAccount<'info>,
+    /// Employee's confidential account - PDA derived from org_id + employee wallet
+    #[account(
+        mut,
+        seeds = [EmployeeConfAccount::SEED_PREFIX, org.org_id.as_ref(), claimer.key().as_ref()],
+        bump = claimer_conf_account.bump,
+        constraint = claimer_conf_account.owner == claimer.key() @ ZurpayError::ClaimerMismatch,
+        constraint = claimer_conf_account.org_id == org.org_id @ ZurpayError::ClaimerOrgMismatch
+    )]
+    pub claimer_conf_account: Account<'info, EmployeeConfAccount>,
 
     pub system_program: Program<'info, System>,
 }
@@ -101,7 +109,7 @@ pub fn handler<'info>(
         &ciphertext_hash,
     )?;
 
-    let actual_payout_hash = hash(ctx.accounts.claimer_conf_account.key.as_ref());
+    let actual_payout_hash = hash(ctx.accounts.claimer_conf_account.key().as_ref());
     require!(
         actual_payout_hash.to_bytes() == payout_pubkey_hash,
         ZurpayError::PayoutMismatch
@@ -121,8 +129,8 @@ pub fn handler<'info>(
 
     execute_confidential_transfer(
         &ctx.accounts.inco_program.to_account_info(),
-        &ctx.accounts.treasury_conf_account.to_account_info(),
-        &ctx.accounts.claimer_conf_account.to_account_info(),
+        &mut ctx.accounts.treasury,
+        &mut ctx.accounts.claimer_conf_account,
         &encrypted_amount,
         ctx.remaining_accounts,
         &ctx.accounts.claimer.to_account_info(),
@@ -326,30 +334,16 @@ fn verify_zk_proof(
     Ok(())
 }
 
-/// Execute confidential transfer using Inco Lightning CPIs
-///
-/// This performs the following FHE operations:
-/// 1. Create an encrypted handle from the ciphertext (new_euint128)
-/// 2. Subtract amount from treasury balance (e_sub)
-/// 3. Add amount to claimer balance (e_add)
-/// 4. Grant decryption permission to claimer (allow)
-///
-/// remaining_accounts layout:
-/// [0] treasury_allowance_pda (mut) - PDA for treasury's new balance
-/// [1] treasury_owner_address (readonly) - Treasury owner for allowance
-/// [2] claimer_allowance_pda (mut) - PDA for claimer's new balance  
-/// [3] claimer_owner_address (readonly) - Claimer for allowance
 fn execute_confidential_transfer<'info>(
     inco_program: &AccountInfo<'info>,
-    treasury_account: &AccountInfo<'info>,
-    claimer_account: &AccountInfo<'info>,
+    treasury: &mut Account<'info, TreasuryAccount>,
+    claimer_conf: &mut Account<'info, EmployeeConfAccount>,
     encrypted_amount: &[u8],
     remaining_accounts: &[AccountInfo<'info>],
     signer: &AccountInfo<'info>,
     system_program: &AccountInfo<'info>,
 ) -> Result<()> {
     const INPUT_TYPE_EUINT128: u8 = 0;
-    const BALANCE_OFFSET: usize = 72;
 
     let amount_handle = new_euint128(
         CpiContext::new(
@@ -362,13 +356,8 @@ fn execute_confidential_transfer<'info>(
         INPUT_TYPE_EUINT128,
     )?;
 
-    let treasury_data = treasury_account.try_borrow_data()?;
-    let treasury_balance = read_euint128_from_account(&treasury_data, BALANCE_OFFSET)?;
-    drop(treasury_data);
-
-    let claimer_data = claimer_account.try_borrow_data()?;
-    let claimer_balance = read_euint128_from_account(&claimer_data, BALANCE_OFFSET)?;
-    drop(claimer_data);
+    let treasury_balance = Euint128(treasury.balance);
+    let claimer_balance = Euint128(claimer_conf.balance);
 
     let new_treasury_balance = e_sub(
         CpiContext::new(
@@ -394,13 +383,8 @@ fn execute_confidential_transfer<'info>(
         0u8,
     )?;
 
-    let mut treasury_data_mut = treasury_account.try_borrow_mut_data()?;
-    write_euint128_to_account(&mut treasury_data_mut, BALANCE_OFFSET, new_treasury_balance)?;
-    drop(treasury_data_mut);
-
-    let mut claimer_data_mut = claimer_account.try_borrow_mut_data()?;
-    write_euint128_to_account(&mut claimer_data_mut, BALANCE_OFFSET, new_claimer_balance)?;
-    drop(claimer_data_mut);
+    treasury.balance = new_treasury_balance.0;
+    claimer_conf.balance = new_claimer_balance.0;
 
     if remaining_accounts.len() >= 4 {
         let claimer_allowance_pda = &remaining_accounts[2];
@@ -422,29 +406,6 @@ fn execute_confidential_transfer<'info>(
         )?;
     }
 
-    Ok(())
-}
-
-fn read_euint128_from_account(data: &[u8], offset: usize) -> Result<Euint128> {
-    if data.len() < offset + 16 {
-        return Err(ZurpayError::InvalidAccountData.into());
-    }
-
-    let mut handle_bytes = [0u8; 16];
-    handle_bytes.copy_from_slice(&data[offset..offset + 16]);
-
-    // Convert little-endian bytes to u128
-    let handle = u128::from_le_bytes(handle_bytes);
-    Ok(Euint128(handle))
-}
-
-fn write_euint128_to_account(data: &mut [u8], offset: usize, handle: Euint128) -> Result<()> {
-    if data.len() < offset + 16 {
-        return Err(ZurpayError::InvalidAccountData.into());
-    }
-
-    let handle_bytes = handle.0.to_le_bytes();
-    data[offset..offset + 16].copy_from_slice(&handle_bytes);
     Ok(())
 }
 
