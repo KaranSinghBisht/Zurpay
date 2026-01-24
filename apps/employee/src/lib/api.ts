@@ -56,6 +56,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<ApiR
 export const employeeApi = {
   claims: {
     getPackage: (token: string) => request<ClaimPackageV2>(`/api/claims/${token}`),
+    generateProof: (
+      token: string,
+      payload: { walletAddress: string; employeeConfAccountAddress: string }
+    ) =>
+      request<ClaimPackageV2>(`/api/claims/${token}/generate-proof`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
     markUsed: (token: string, txSignature: string) =>
       request(`/api/claims/${token}/mark-used`, {
         method: 'POST',

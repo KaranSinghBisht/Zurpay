@@ -27,9 +27,21 @@ type ClaimStatus =
   | 'auth-required'
   | 'email-mismatch'
   | 'ready'
+  | 'generating-proof'
   | 'claiming'
   | 'success'
   | 'error';
+
+interface ClaimInfo {
+  type: 'legacy' | 'privacy-preserving';
+  expectedEmail?: string;
+  orgIdHex?: string;
+  payrunIdHex?: string;
+  merkleRootHex?: string;
+  zkVerifierProgramId?: string;
+  incoProgramId?: string;
+  claimPackage?: ClaimPackageV2;
+}
 
 export default function ClaimDetailPage({ params }: { params: { payrunId: string } }) {
   const searchParams = useSearchParams();
@@ -40,6 +52,7 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
   const { publicKey, signTransaction, connected } = useWallet();
 
   const [status, setStatus] = useState<ClaimStatus>('loading');
+  const [claimInfo, setClaimInfo] = useState<ClaimInfo | null>(null);
   const [claimPackage, setClaimPackage] = useState<ClaimPackageV2 | null>(null);
   const [expectedEmail, setExpectedEmail] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
@@ -60,7 +73,7 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
       return;
     }
 
-    const fetchClaimPackage = async () => {
+    const fetchClaimInfo = async () => {
       try {
         const result = await employeeApi.claims.getPackage(token);
 
@@ -83,56 +96,61 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
         }
 
         if (!result.data) {
-          throw new Error('Claim package missing');
+          throw new Error('Claim data missing');
         }
 
-        const claimData = result.data as ClaimPackageV2 & { expectedEmail?: string };
-        setClaimPackage(claimData);
+        const data = result.data as unknown as ClaimInfo;
+        setClaimInfo(data);
 
-        if (claimData.expectedEmail) {
-          setExpectedEmail(claimData.expectedEmail);
-          if (session.user?.email?.toLowerCase() !== claimData.expectedEmail.toLowerCase()) {
+        if (data.expectedEmail) {
+          setExpectedEmail(data.expectedEmail);
+          if (session.user?.email?.toLowerCase() !== data.expectedEmail.toLowerCase()) {
             setStatus('email-mismatch');
             return;
           }
         }
 
+        if (data.type === 'legacy' && data.claimPackage) {
+          setClaimPackage(data.claimPackage);
+        }
+
         setStatus('ready');
       } catch (err) {
-        console.error('Failed to fetch claim package:', err);
+        console.error('Failed to fetch claim info:', err);
         setError(err instanceof Error ? err.message : 'Failed to load claim');
         setStatus('error');
       }
     };
 
-    fetchClaimPackage();
+    fetchClaimInfo();
   }, [token, session, authStatus]);
 
   const handleClaim = async () => {
-    if (!claimPackage || !publicKey || !signTransaction || !token) {
+    if (!publicKey || !signTransaction || !token || !claimInfo) {
       setError('Missing required data');
       return;
     }
 
     try {
-      setStatus('claiming');
+      setStatus('generating-proof');
       setError('');
+
+      const orgIdHex = claimInfo.orgIdHex || claimPackage?.orgIdHex;
+      const payrunIdHex = claimInfo.payrunIdHex || claimPackage?.payrunIdHex;
+      const incoProgramId = claimInfo.incoProgramId || claimPackage?.incoProgramId;
+
+      if (!orgIdHex || !payrunIdHex) {
+        throw new Error('Missing org or payrun ID');
+      }
 
       const {
         org: orgPda,
         payrun: payrunPda,
         treasury,
         employeeConf,
-      } = deriveClaimPdas(
-        claimPackage.orgIdHex,
-        claimPackage.payrunIdHex,
-        publicKey,
-        ZURPAY_PROGRAM_ID
-      );
+      } = deriveClaimPdas(orgIdHex, payrunIdHex, publicKey, ZURPAY_PROGRAM_ID);
 
-      const incoProgram = claimPackage.incoProgramId
-        ? new PublicKey(claimPackage.incoProgramId)
-        : DEFAULT_INCO_PROGRAM_ID;
+      const incoProgram = incoProgramId ? new PublicKey(incoProgramId) : DEFAULT_INCO_PROGRAM_ID;
 
       const employeeConfInfo = await connection.getAccountInfo(employeeConf);
       if (!employeeConfInfo) {
@@ -140,21 +158,44 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
         await initEmployeeConf(
           connection,
           { publicKey, signTransaction },
-          claimPackage.orgIdHex,
+          orgIdHex,
           incoProgram,
           ZURPAY_PROGRAM_ID
         );
         console.log('Employee conf account initialized');
       }
 
-      const zkVerifierProgram = claimPackage.zkVerifierProgramId
-        ? new PublicKey(claimPackage.zkVerifierProgramId)
+      let finalClaimPackage = claimPackage;
+
+      if (claimInfo.type === 'privacy-preserving') {
+        console.log('Generating proof for wallet:', publicKey.toBase58());
+        const proofResult = await employeeApi.claims.generateProof(token, {
+          walletAddress: publicKey.toBase58(),
+          employeeConfAccountAddress: employeeConf.toBase58(),
+        });
+
+        if (!proofResult.ok || !proofResult.data) {
+          throw new Error(proofResult.error || 'Failed to generate proof');
+        }
+
+        finalClaimPackage = proofResult.data as ClaimPackageV2;
+        setClaimPackage(finalClaimPackage);
+      }
+
+      if (!finalClaimPackage) {
+        throw new Error('No claim package available');
+      }
+
+      setStatus('claiming');
+
+      const zkVerifierProgram = finalClaimPackage.zkVerifierProgramId
+        ? new PublicKey(finalClaimPackage.zkVerifierProgramId)
         : DEFAULT_ZK_VERIFIER_PROGRAM_ID;
 
       const signature = await submitClaimFromPackage(
         connection,
         { publicKey, signTransaction },
-        claimPackage,
+        finalClaimPackage,
         {
           org: orgPda,
           payrun: payrunPda,
@@ -275,6 +316,7 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
         );
 
       case 'ready':
+      case 'generating-proof':
       case 'claiming':
         return (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 max-w-md">
@@ -318,14 +360,20 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
               {connected && (
                 <button
                   onClick={handleClaim}
-                  disabled={status === 'claiming'}
+                  disabled={status === 'generating-proof' || status === 'claiming'}
                   className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
                 >
                   {status === 'ready' && 'Claim Salary'}
+                  {status === 'generating-proof' && (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Generating ZK Proof...
+                    </span>
+                  )}
                   {status === 'claiming' && (
                     <span className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Claiming...
+                      Submitting Claim...
                     </span>
                   )}
                 </button>
