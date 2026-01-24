@@ -220,7 +220,8 @@ export interface Payslip {
   paidAt: string | null;
   worker?: {
     id: string;
-    wallet: string;
+    wallet: string | null;
+    email: string | null;
     displayName: string | null;
     type: string;
   };

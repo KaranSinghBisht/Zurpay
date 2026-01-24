@@ -392,6 +392,143 @@ export default function PayrunDetailPage() {
     }
   };
 
+  const handleLaunchPayrun = async () => {
+    if (!org || !payrun || !wallet || !publicKey || !signTransaction) return;
+
+    setActionLoading('launch');
+    setError(null);
+
+    try {
+      setActionLoading('launch-validate');
+      await api.payruns.validate(org.id, payrun.id, wallet);
+
+      const updatedPayrun = await api.payruns.get(org.id, payrun.id, wallet);
+      setPayrun(updatedPayrun);
+
+      setActionLoading('launch-chain');
+      await postPayrunToChain(updatedPayrun);
+
+      setActionLoading('launch-claims');
+      await api.payruns.openClaims(org.id, payrun.id, wallet);
+
+      await loadData();
+    } catch (err) {
+      console.error('Launch payrun error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to launch payrun');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const postPayrunToChain = async (payrunData: Payrun & { payslips: Payslip[] }) => {
+    if (!org || !wallet || !publicKey || !signTransaction) return;
+
+    if (!payrunData.merkleRootHex) {
+      throw new Error('Merkle root not generated');
+    }
+
+    const validatePublicKey = (value: string, fieldName: string): PublicKey => {
+      try {
+        return new PublicKey(value);
+      } catch {
+        throw new Error(`Invalid ${fieldName}: "${value}"`);
+      }
+    };
+
+    const treasuryPubkey = validatePublicKey(org.treasuryConfAccount, 'treasury account');
+    const zkVerifierPubkey = validatePublicKey(org.zkVerifierProgramId, 'ZK verifier program ID');
+    const incoPubkey = validatePublicKey(org.incoProgramId, 'Inco program ID');
+
+    const orgIdBytes = hexToBytes(org.orgIdHex);
+    const payrunIdBytes = hexToBytes(payrunData.payrunIdHex);
+    const merkleRootBytes = hexToBytes(payrunData.merkleRootHex);
+
+    const orgPda = deriveOrgPda(orgIdBytes, ZURPAY_PROGRAM_ID);
+    const payrunPda = derivePayrunPda(orgIdBytes, payrunIdBytes, ZURPAY_PROGRAM_ID);
+
+    const [orgAccountInfo, payrunAccountInfo] = await Promise.all([
+      connection.getAccountInfo(orgPda),
+      connection.getAccountInfo(payrunPda),
+    ]);
+
+    if (payrunAccountInfo) {
+      throw new Error('Payrun already posted on-chain');
+    }
+
+    const transaction = new Transaction();
+
+    if (!orgAccountInfo) {
+      const initOrgDiscriminator = Buffer.from([159, 225, 34, 170, 187, 34, 218, 4]);
+      const initOrgData = Buffer.concat([
+        initOrgDiscriminator,
+        Buffer.from(orgIdBytes),
+        Buffer.from(treasuryPubkey.toBytes()),
+        Buffer.from(zkVerifierPubkey.toBytes()),
+        Buffer.from(incoPubkey.toBytes()),
+      ]);
+
+      transaction.add(
+        new TransactionInstruction({
+          programId: ZURPAY_PROGRAM_ID,
+          keys: [
+            { pubkey: publicKey, isSigner: true, isWritable: true },
+            { pubkey: orgPda, isSigner: false, isWritable: true },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          ],
+          data: initOrgData,
+        })
+      );
+    }
+
+    const setPayrunDiscriminator = Buffer.from([106, 77, 86, 198, 171, 28, 92, 59]);
+    const totalEmployeesBuf = Buffer.alloc(4);
+    totalEmployeesBuf.writeUInt32LE(payrunData.totalPayslips, 0);
+
+    const deadlineUnix = payrunData.claimDeadline
+      ? Math.floor(new Date(payrunData.claimDeadline).getTime() / 1000)
+      : Math.floor(Date.now() / 1000 + 30 * 24 * 60 * 60);
+    const deadlineBuf = Buffer.alloc(8);
+    deadlineBuf.writeBigInt64LE(BigInt(deadlineUnix), 0);
+
+    const setPayrunData = Buffer.concat([
+      setPayrunDiscriminator,
+      Buffer.from(payrunIdBytes),
+      Buffer.from(merkleRootBytes),
+      totalEmployeesBuf,
+      deadlineBuf,
+    ]);
+
+    transaction.add(
+      new TransactionInstruction({
+        programId: ZURPAY_PROGRAM_ID,
+        keys: [
+          { pubkey: publicKey, isSigner: true, isWritable: true },
+          { pubkey: orgPda, isSigner: false, isWritable: true },
+          { pubkey: payrunPda, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: setPayrunData,
+      })
+    );
+
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = publicKey;
+
+    const signedTx = await signTransaction(transaction);
+    const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    });
+
+    await connection.confirmTransaction(
+      { signature, blockhash, lastValidBlockHeight },
+      'confirmed'
+    );
+
+    await api.payruns.setOnChain(org.id, payrunData.id, signature, wallet);
+  };
+
   const handleSetOnChain = async () => {
     if (!org || !payrun || !wallet || !publicKey || !signTransaction) return;
 
@@ -687,11 +824,20 @@ export default function PayrunDetailPage() {
       <div className="flex gap-3 mb-8">
         {canValidate && (
           <button
-            onClick={() => handleAction('validate')}
+            onClick={handleLaunchPayrun}
             disabled={actionLoading !== null}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 rounded-lg transition-colors"
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors font-medium text-lg"
           >
-            {actionLoading === 'validate' ? 'Validating...' : 'Validate & Generate Proofs'}
+            {actionLoading?.startsWith('launch') ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {actionLoading === 'launch-validate' && 'Generating proofs...'}
+                {actionLoading === 'launch-chain' && 'Posting to chain...'}
+                {actionLoading === 'launch-claims' && 'Opening claims...'}
+              </span>
+            ) : (
+              'Launch Payrun'
+            )}
           </button>
         )}
         {canSetOnChain && (
@@ -978,10 +1124,13 @@ export default function PayrunDetailPage() {
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-medium">
-                        {payslip.worker?.displayName || payslip.worker?.wallet.slice(0, 8) + '...'}
+                        {payslip.worker?.displayName || payslip.worker?.email || 'Unknown'}
                       </div>
-                      <div className="text-xs text-zinc-500 font-mono">
-                        {payslip.worker?.wallet.slice(0, 12)}...
+                      <div className="text-xs text-zinc-500">
+                        {payslip.worker?.email ||
+                          (payslip.worker?.wallet
+                            ? `${payslip.worker.wallet.slice(0, 12)}...`
+                            : 'No wallet')}
                       </div>
                     </div>
                   </td>
