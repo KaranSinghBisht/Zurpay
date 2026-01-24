@@ -41,6 +41,7 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
   const [claimPackage, setClaimPackage] = useState<ClaimPackageV2 | null>(null);
   const [error, setError] = useState<string>('');
   const [txSignature, setTxSignature] = useState<string>('');
+  const [balanceHandle, setBalanceHandle] = useState<string | null>(null);
 
   // Fetch claim package on mount
   useEffect(() => {
@@ -160,12 +161,22 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
 
       setTxSignature(signature);
 
-      // Mark token as used
+      const confAccountInfo = await connection.getAccountInfo(employeeConf);
+      if (confAccountInfo && confAccountInfo.data.length >= 88) {
+        const balanceBytes = confAccountInfo.data.slice(72, 88);
+        let handle = BigInt(0);
+        for (let i = 0; i < 16; i++) {
+          handle = handle | (BigInt(balanceBytes[i]) << BigInt(i * 8));
+        }
+        const handleHex = '0x' + handle.toString(16).padStart(32, '0');
+        console.log('Employee balance handle:', handleHex);
+        setBalanceHandle(handleHex);
+      }
+
       try {
         await employeeApi.claims.markUsed(token, signature);
       } catch (markError) {
         console.warn('Failed to mark token as used:', markError);
-        // Non-fatal, continue
       }
 
       setStatus('success');
@@ -277,10 +288,10 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
                 confidential account.
               </p>
 
-              {claimPackage?.encryptedAmountB64 && (
+              {balanceHandle && (
                 <div className="mb-4">
                   <BalanceViewer
-                    encryptedHandle={claimPackage.encryptedAmountB64}
+                    encryptedHandle={balanceHandle}
                     label="Claimed Amount"
                     decimals={6}
                     tokenSymbol="USDC"

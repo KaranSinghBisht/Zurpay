@@ -34,6 +34,7 @@ export default function PaylinkClaimPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [txSig, setTxSig] = useState<string | null>(null);
+  const [balanceHandle, setBalanceHandle] = useState<string | null>(null);
 
   useEffect(() => {
     if (token) {
@@ -190,6 +191,18 @@ export default function PaylinkClaimPage() {
 
       setTxSig(signature);
 
+      const confAccountInfo = await connection.getAccountInfo(employeeConf);
+      if (confAccountInfo && confAccountInfo.data.length >= 88) {
+        const balanceBytes = confAccountInfo.data.slice(72, 88);
+        let handle = BigInt(0);
+        for (let i = 0; i < 16; i++) {
+          handle = handle | (BigInt(balanceBytes[i]) << BigInt(i * 8));
+        }
+        const handleHex = '0x' + handle.toString(16).padStart(32, '0');
+        console.log('Employee balance handle:', handleHex);
+        setBalanceHandle(handleHex);
+      }
+
       await employeeApi.paylinks.claim(token, {
         claimerWallet: publicKey.toBase58(),
         claimerConfAccount: employeeConf.toBase58(),
@@ -237,10 +250,10 @@ export default function PaylinkClaimPage() {
               <p className="text-zinc-400">Your confidential payment has been received</p>
             </div>
 
-            {claimPackage?.encryptedAmountB64 && (
+            {balanceHandle && (
               <div className="mb-6">
                 <BalanceViewer
-                  encryptedHandle={claimPackage.encryptedAmountB64}
+                  encryptedHandle={balanceHandle}
                   label="Received Amount"
                   decimals={6}
                   tokenSymbol="USDC"
