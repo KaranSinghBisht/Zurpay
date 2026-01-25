@@ -162,17 +162,6 @@ export function buildClaimInstruction(
     return buf;
   };
 
-  console.log('=== SDK BUILD CLAIM INSTRUCTION ===');
-  console.log('nullifierHash:', Buffer.from(nullifierHash).toString('hex'));
-  console.log('payoutPubkeyHash:', Buffer.from(payoutPubkeyHash).toString('hex'));
-  console.log('salaryCommitment:', Buffer.from(salaryCommitment).toString('hex'));
-  console.log('ciphertextHash:', Buffer.from(ciphertextHash).toString('hex'));
-  console.log('proofBytes.length:', proofBytes.length);
-  console.log('publicInputsBytes.length:', publicInputsBytes.length);
-  console.log('publicInputsBytes (hex):', Buffer.from(publicInputsBytes).toString('hex'));
-  console.log('encryptedAmount.length:', encryptedAmount.length);
-  console.log('schemaVersion:', schemaVersion);
-
   const data = Buffer.concat([
     discriminator,
     Buffer.from(nullifierHash),

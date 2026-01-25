@@ -527,7 +527,21 @@ export default function TreasuryPage() {
             </div>
           ) : !orgInitialized ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">🔗</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-zinc-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
+                </svg>
+              </div>
               <h4 className="text-lg font-medium mb-2">Organization Not On-Chain</h4>
               <p className="text-zinc-400 text-sm mb-4">
                 Initialize your organization on Solana before setting up the treasury
@@ -548,7 +562,21 @@ export default function TreasuryPage() {
             </div>
           ) : !treasuryInitialized ? (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">🔒</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
               <h4 className="text-lg font-medium mb-2">Treasury Not Initialized</h4>
               <p className="text-zinc-400 text-sm mb-4">
                 Initialize your encrypted treasury to enable confidential payments
@@ -686,7 +714,21 @@ export default function TreasuryPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <div className="text-5xl mb-4">🔐</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
               <h4 className="text-lg font-medium mb-2">Multi-Sig Not Configured</h4>
               <p className="text-zinc-400 text-sm mb-4">
                 Secure your treasury with multi-signature approval using Squads Protocol

@@ -230,7 +230,21 @@ export default function PaylinkClaimPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="glass-card rounded-xl p-8 max-w-md w-full text-center">
-          <div className="text-5xl mb-4">❌</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </div>
           <h1 className="text-2xl font-bold mb-2">Unable to Load Paylink</h1>
           <p className="text-zinc-400">{error}</p>
         </div>
@@ -245,7 +259,21 @@ export default function PaylinkClaimPage() {
         <div className="min-h-screen flex items-center justify-center p-4">
           <div className="glass-card rounded-xl p-8 max-w-md w-full">
             <div className="text-center mb-6">
-              <div className="text-5xl mb-4">🎉</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
               <h1 className="text-2xl font-bold mb-2 text-emerald-400">Payment Claimed!</h1>
               <p className="text-zinc-400">Your confidential payment has been received</p>
             </div>
@@ -283,7 +311,11 @@ export default function PaylinkClaimPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="glass-card rounded-xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
-          <div className="text-5xl mb-4">💰</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+            <svg className="w-8 h-8 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           <h1 className="text-2xl font-bold mb-2">Payment Link</h1>
           <p className="text-zinc-400">From {paylinkInfo?.orgName}</p>
         </div>

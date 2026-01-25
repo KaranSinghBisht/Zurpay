@@ -7,10 +7,9 @@ import { api, Org, OrgStats } from '../../../lib/api';
 import dynamic from 'next/dynamic';
 
 // Dynamic import for SSR compatibility (D3 requires browser)
-const PayrollFlowChart = dynamic(
-  () => import('../../../components/PayrollFlowChart'),
-  { ssr: false }
-);
+const PayrollFlowChart = dynamic(() => import('../../../components/PayrollFlowChart'), {
+  ssr: false,
+});
 
 function formatAmount(amount: string): string {
   const num = BigInt(amount);
@@ -195,7 +194,21 @@ export default function DashboardPage() {
   if (!wallet) {
     return (
       <div className="text-center py-16">
-        <div className="text-5xl mb-4">🔐</div>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-emerald-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+        </div>
         <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
         <p className="text-zinc-400">Connect your wallet to view your organization dashboard</p>
       </div>
@@ -213,7 +226,21 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="text-center py-16">
-        <div className="text-5xl mb-4">❌</div>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </div>
         <h3 className="text-xl font-semibold mb-2">Error Loading Dashboard</h3>
         <p className="text-zinc-400 mb-4">{error}</p>
         <button onClick={loadData} className="btn-primary">
@@ -228,7 +255,21 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
         <div className="mt-12 text-center py-16 glass-card rounded-xl">
-          <div className="text-5xl mb-4">🏢</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold mb-2">No Organization Found</h3>
           <p className="text-zinc-400 mb-6">Initialize your organization to get started</p>
           <a href="/dashboard/settings" className="btn-primary">
@@ -291,8 +332,9 @@ export default function DashboardPage() {
       {stats && (
         <PayrollFlowChart
           data={{
-            treasuryTotal: Number(stats.financials.totalPaidAmount || 0) / 1_000_000 +
-              (stats.claims.pending * 1000), // estimated pending amount
+            treasuryTotal:
+              Number(stats.financials.totalPaidAmount || 0) / 1_000_000 +
+              stats.claims.pending * 1000, // estimated pending amount
             activePayruns: Number(stats.financials.totalPaidAmount || 0) / 1_000_000,
             pendingClaims: stats.claims.pending * 1000, // estimated per-claim amount
             claimedAmount: Number(stats.financials.totalPaidAmount || 0) / 1_000_000,
@@ -411,7 +453,21 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="mt-4 text-center py-16 glass-card rounded-xl">
-          <div className="text-5xl mb-4">📋</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold mb-2">No payruns yet</h3>
           <p className="text-zinc-400 mb-6">Create your first confidential payrun to get started</p>
           <a href="/dashboard/payruns/new" className="btn-primary">

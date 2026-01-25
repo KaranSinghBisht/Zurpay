@@ -48,33 +48,64 @@ export default function ClaimsPage() {
       <div className="py-12">
         <h1 className="text-2xl font-bold mb-6">Your Claims</h1>
         <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">🔗</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+              />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
           <p className="text-zinc-400 max-w-md mx-auto">
-            Connect your wallet to view pending salary claims. If you have a claim link,
-            you can use it directly without connecting.
+            Connect your wallet to view pending salary claims. If you have a claim link, you can use
+            it directly without connecting.
           </p>
         </div>
 
         <div className="mt-8 p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-          <h2 className="text-lg font-semibold mb-4">🔒 How Zurpay Protects Your Privacy</h2>
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18 8h-1V6c0-2.76-2.24-5-5-5s-5 2.24-5 5v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+            </svg>
+            How Zurpay Protects Your Privacy
+          </h2>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="p-4 bg-zinc-800/50 rounded-lg">
-              <div className="text-2xl mb-2">🔐</div>
+              <div className="w-8 h-8 mb-2 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5s-5 2.24-5 5v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+                </svg>
+              </div>
               <h3 className="font-medium mb-1">Encrypted Amounts</h3>
               <p className="text-sm text-zinc-400">
                 Your salary is encrypted on-chain. Only you know how much you received.
               </p>
             </div>
             <div className="p-4 bg-zinc-800/50 rounded-lg">
-              <div className="text-2xl mb-2">🎭</div>
+              <div className="w-8 h-8 mb-2 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                </svg>
+              </div>
               <h3 className="font-medium mb-1">Zero-Knowledge Proofs</h3>
               <p className="text-sm text-zinc-400">
                 Claim eligibility is verified without revealing your identity or amount.
               </p>
             </div>
             <div className="p-4 bg-zinc-800/50 rounded-lg">
-              <div className="text-2xl mb-2">🔗</div>
+              <div className="w-8 h-8 mb-2 flex items-center justify-center">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              </div>
               <h3 className="font-medium mb-1">Unguessable Links</h3>
               <p className="text-sm text-zinc-400">
                 Claim links use secure tokens. No one can find claims by wallet address.
@@ -97,9 +128,9 @@ export default function ClaimsPage() {
     );
   }
 
-  const pendingClaims = claims.filter(c => c.status === 'PENDING');
-  const claimedHistory = claims.filter(c => c.status === 'CLAIMED');
-  const expiredClaims = claims.filter(c => c.status === 'EXPIRED');
+  const pendingClaims = claims.filter((c) => c.status === 'PENDING');
+  const claimedHistory = claims.filter((c) => c.status === 'CLAIMED');
+  const expiredClaims = claims.filter((c) => c.status === 'EXPIRED');
 
   return (
     <div className="py-12">
@@ -108,14 +139,30 @@ export default function ClaimsPage() {
       {claims.length === 0 ? (
         <div className="space-y-6">
           <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 rounded-xl p-8 text-center">
-            <div className="text-5xl mb-4">📭</div>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
             <h3 className="text-xl font-semibold mb-2">No Claims Found</h3>
             <p className="text-zinc-400 max-w-md mx-auto mb-4">
-              No pending claims were found for this wallet. If you received a claim link
-              from your employer, use that link directly to claim your salary.
+              No pending claims were found for this wallet. If you received a claim link from your
+              employer, use that link directly to claim your salary.
             </p>
             <div className="inline-flex items-center gap-2 text-sm text-emerald-400">
-              <span>💡</span>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
               <span>Claim links look like: zurpay.app/claims/...?token=...</span>
             </div>
           </div>
@@ -123,7 +170,9 @@ export default function ClaimsPage() {
           <div className="p-4 bg-zinc-800/30 border border-zinc-800 rounded-lg">
             <p className="text-sm text-zinc-400 text-center">
               <strong className="text-zinc-300">Connected:</strong>{' '}
-              <span className="font-mono">{wallet?.slice(0, 8)}...{wallet?.slice(-8)}</span>
+              <span className="font-mono">
+                {wallet?.slice(0, 8)}...{wallet?.slice(-8)}
+              </span>
             </p>
           </div>
         </div>
@@ -133,7 +182,10 @@ export default function ClaimsPage() {
           {pendingClaims.length > 0 && (
             <section>
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="text-amber-400">⏳</span> Pending Claims
+                <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                </svg>
+                Pending Claims
               </h2>
               <div className="space-y-3">
                 {pendingClaims.map((claim) => (
@@ -163,19 +215,20 @@ export default function ClaimsPage() {
           {claimedHistory.length > 0 && (
             <section>
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <span className="text-emerald-400">✓</span> Claim History
+                <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                </svg>
+                Claim History
               </h2>
               <div className="space-y-3">
                 {claimedHistory.map((claim) => (
-                  <div
-                    key={claim.id}
-                    className="bg-zinc-900 border border-zinc-800 rounded-xl p-4"
-                  >
+                  <div key={claim.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
                     <div className="flex justify-between items-center">
                       <div>
                         <div className="font-medium">{claim.orgName}</div>
                         <div className="text-sm text-zinc-400">
-                          Claimed: {claim.claimedAt && new Date(claim.claimedAt).toLocaleDateString()}
+                          Claimed:{' '}
+                          {claim.claimedAt && new Date(claim.claimedAt).toLocaleDateString()}
                         </div>
                       </div>
                       <div className="text-right">
@@ -204,24 +257,41 @@ export default function ClaimsPage() {
 
       {/* Privacy Education */}
       <div className="mt-8 p-6 bg-zinc-900/50 border border-zinc-800 rounded-xl">
-        <h2 className="text-lg font-semibold mb-4">🔒 Your Privacy is Protected</h2>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5s-5 2.24-5 5v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+          </svg>
+          Your Privacy is Protected
+        </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="p-4 bg-zinc-800/50 rounded-lg">
-            <div className="text-2xl mb-2">🔐</div>
+            <div className="w-8 h-8 mb-2 flex items-center justify-center">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5s-5 2.24-5 5v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z" />
+              </svg>
+            </div>
             <h3 className="font-medium mb-1">Encrypted Amounts</h3>
             <p className="text-sm text-zinc-400">
               Salaries are encrypted using Inco Lightning. No one can see how much you earn.
             </p>
           </div>
           <div className="p-4 bg-zinc-800/50 rounded-lg">
-            <div className="text-2xl mb-2">🎭</div>
+            <div className="w-8 h-8 mb-2 flex items-center justify-center">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+              </svg>
+            </div>
             <h3 className="font-medium mb-1">Zero-Knowledge Proofs</h3>
             <p className="text-sm text-zinc-400">
               Your claim eligibility is proven mathematically without revealing any data.
             </p>
           </div>
           <div className="p-4 bg-zinc-800/50 rounded-lg">
-            <div className="text-2xl mb-2">🛡️</div>
+            <div className="w-8 h-8 mb-2 flex items-center justify-center">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" />
+              </svg>
+            </div>
             <h3 className="font-medium mb-1">No Public Records</h3>
             <p className="text-sm text-zinc-400">
               Claims cannot be linked to your wallet address by external observers.

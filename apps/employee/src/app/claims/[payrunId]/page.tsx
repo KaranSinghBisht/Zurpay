@@ -154,7 +154,6 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
 
       const employeeConfInfo = await connection.getAccountInfo(employeeConf);
       if (!employeeConfInfo) {
-        console.log('Initializing employee conf account...');
         await initEmployeeConf(
           connection,
           { publicKey, signTransaction },
@@ -162,13 +161,11 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
           incoProgram,
           ZURPAY_PROGRAM_ID
         );
-        console.log('Employee conf account initialized');
       }
 
       let finalClaimPackage = claimPackage;
 
       if (claimInfo.type === 'privacy-preserving') {
-        console.log('Generating proof for wallet:', publicKey.toBase58());
         const proofResult = await employeeApi.claims.generateProof(token, {
           walletAddress: publicKey.toBase58(),
           employeeConfAccountAddress: employeeConf.toBase58(),
@@ -210,10 +207,11 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
       setTxSignature(signature);
 
       try {
-        await employeeApi.claims.markUsed(token, signature);
-      } catch (markError) {
-        console.warn('Failed to mark token as used:', markError);
-      }
+        const markResult = await employeeApi.claims.markUsed(token, signature);
+        if (!markResult.ok && markResult.status !== 410) {
+          console.warn('Failed to mark token as used:', markResult.error);
+        }
+      } catch {}
 
       setStatus('success');
     } catch (err) {

@@ -325,7 +325,21 @@ export function OnboardingWizard() {
           {/* Step: Welcome */}
           {step === 'welcome' && (
             <div className="text-center">
-              <div className="text-6xl mb-6">🚀</div>
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold text-white mb-4">Welcome to Zurpay</h1>
               <p className="text-slate-400 mb-8 max-w-md mx-auto">
                 Private payroll powered by zero-knowledge proofs. Your employees receive payments
@@ -340,7 +354,21 @@ export function OnboardingWizard() {
           {/* Step: Auth */}
           {step === 'auth' && (
             <div className="text-center">
-              <div className="text-6xl mb-6">🔐</div>
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold text-white mb-4">Verify Your Wallet</h1>
               <p className="text-slate-400 mb-8">
                 Sign a message to prove you own this wallet. This doesn&apos;t cost any gas.
@@ -365,7 +393,21 @@ export function OnboardingWizard() {
           {/* Step: Org Choice */}
           {step === 'org-choice' && (
             <div className="text-center">
-              <div className="text-6xl mb-6">🏢</div>
+              <div className="w-16 h-16 mx-auto mb-6 rounded-lg bg-slate-800 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-slate-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold text-white mb-4">Get Started</h1>
               <p className="text-slate-400 mb-8">
                 Are you creating a new organization or joining an existing one?
@@ -375,7 +417,21 @@ export function OnboardingWizard() {
                   onClick={() => setStep('create-org')}
                   className="p-6 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500/50 rounded-2xl transition-all group"
                 >
-                  <div className="text-4xl mb-3">✨</div>
+                  <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-emerald-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
                   <div className="font-semibold text-white group-hover:text-emerald-400 transition-colors">
                     Create Organization
                   </div>
@@ -442,7 +498,21 @@ export function OnboardingWizard() {
           {/* Step: Init Org On-Chain */}
           {step === 'init-org-onchain' && (
             <div className="text-center">
-              <div className="text-6xl mb-6">🔗</div>
+              <div className="w-16 h-16 mx-auto mb-6 rounded-lg bg-slate-800 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-slate-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold text-white mb-4">Initialize On-Chain</h1>
               <p className="text-slate-400 mb-8">
                 Create your organization account on Solana. This registers your org with the Zurpay
@@ -477,7 +547,21 @@ export function OnboardingWizard() {
           {/* Step: Init Treasury */}
           {step === 'init-treasury' && (
             <div className="text-center">
-              <div className="text-6xl mb-6">🏦</div>
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold text-white mb-4">Initialize Treasury</h1>
               <p className="text-slate-400 mb-8">
                 Your organization needs a confidential treasury account on-chain. This creates an
@@ -515,7 +599,21 @@ export function OnboardingWizard() {
           {step === 'add-worker' && (
             <div>
               <div className="text-center mb-6">
-                <div className="text-5xl mb-4">🎉</div>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-emerald-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
                 <h1 className="text-3xl font-bold text-white mb-2">Treasury Initialized!</h1>
                 <p className="text-slate-400">Invite your first team member by email</p>
               </div>
@@ -579,7 +677,21 @@ export function OnboardingWizard() {
           {/* Step: Complete */}
           {step === 'complete' && (
             <div className="text-center">
-              <div className="text-6xl mb-6">✅</div>
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
               <h1 className="text-3xl font-bold text-white mb-4">You&apos;re All Set!</h1>
               <p className="text-slate-400 mb-8">
                 Your organization is ready. You can now create payrolls and send private payments to

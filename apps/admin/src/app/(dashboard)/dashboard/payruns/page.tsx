@@ -111,7 +111,21 @@ export default function PayrunsPage() {
   if (error) {
     return (
       <div className="text-center py-16">
-        <div className="text-5xl mb-4">❌</div>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </div>
         <h3 className="text-xl font-semibold mb-2">Error Loading Payruns</h3>
         <p className="text-zinc-400 mb-4">{error}</p>
         <button onClick={loadData} className="btn-primary">
@@ -169,7 +183,21 @@ export default function PayrunsPage() {
 
       {payruns.length === 0 ? (
         <div className="glass-card rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">📋</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold mb-2">No payruns found</h3>
           <p className="text-zinc-400 mb-6">
             {statusFilter
@@ -231,10 +259,11 @@ export default function PayrunsPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span
-                      className={`px-2 py-1 text-xs rounded-full ${payrun.mode === 'BATCH'
+                      className={`px-2 py-1 text-xs rounded-full ${
+                        payrun.mode === 'BATCH'
                           ? 'bg-blue-900/50 text-blue-300'
                           : 'bg-purple-900/50 text-purple-300'
-                        }`}
+                      }`}
                     >
                       {payrun.mode}
                     </span>

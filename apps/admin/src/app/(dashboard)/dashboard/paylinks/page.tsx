@@ -139,7 +139,21 @@ export default function PaylinksPage() {
 
       {paylinks.length === 0 ? (
         <div className="glass-card rounded-xl p-8 text-center">
-          <div className="text-5xl mb-4">🔗</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold mb-2">No paylinks yet</h3>
           <p className="text-zinc-400 mb-6">
             Create payment links for contractors or one-off payments
@@ -160,14 +174,15 @@ export default function PaylinksPage() {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl font-bold">{formatAmount(paylink.amount)}</span>
                       <span
-                        className={`px-2 py-1 text-xs rounded-full ${paylink.status === 'ACTIVE'
-                          ? 'bg-emerald-900/50 text-emerald-300'
-                          : paylink.status === 'CLAIMED'
-                            ? 'bg-blue-900/50 text-blue-300'
-                            : paylink.status === 'EXPIRED'
-                              ? 'bg-yellow-900/50 text-yellow-300'
-                              : 'bg-zinc-700 text-zinc-400'
-                          }`}
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          paylink.status === 'ACTIVE'
+                            ? 'bg-emerald-900/50 text-emerald-300'
+                            : paylink.status === 'CLAIMED'
+                              ? 'bg-blue-900/50 text-blue-300'
+                              : paylink.status === 'EXPIRED'
+                                ? 'bg-yellow-900/50 text-yellow-300'
+                                : 'bg-zinc-700 text-zinc-400'
+                        }`}
                       >
                         {paylink.status}
                       </span>
@@ -227,15 +242,41 @@ export default function PaylinksPage() {
                   <div className="flex gap-4">
                     <button
                       onClick={() => setQrModalPaylink(paylink)}
-                      className="text-sm text-blue-400 hover:text-blue-300"
+                      className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300"
                     >
-                      📱 QR Code
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      QR Code
                     </button>
                     <button
                       onClick={() => setResendModalPaylink(paylink)}
-                      className="text-sm text-emerald-400 hover:text-emerald-300"
+                      className="inline-flex items-center gap-1 text-sm text-emerald-400 hover:text-emerald-300"
                     >
-                      📧 Resend Email
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Resend Email
                     </button>
                     <button
                       onClick={() => handleCancel(paylink.id)}

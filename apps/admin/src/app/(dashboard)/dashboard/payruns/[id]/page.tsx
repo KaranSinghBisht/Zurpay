@@ -705,7 +705,21 @@ export default function PayrunDetailPage() {
   if (error && !payrun) {
     return (
       <div className="text-center py-16">
-        <div className="text-5xl mb-4">❌</div>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-red-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </div>
         <h3 className="text-xl font-semibold mb-2">Error Loading Payrun</h3>
         <p className="text-zinc-400 mb-4">{error}</p>
         <button onClick={() => router.push('/dashboard/payruns')} className="btn-primary">

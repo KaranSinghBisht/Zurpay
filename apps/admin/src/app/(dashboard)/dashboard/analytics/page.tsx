@@ -99,7 +99,21 @@ export default function AnalyticsPage() {
   if (!wallet) {
     return (
       <div className="text-center py-16">
-        <div className="text-5xl mb-4">📊</div>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-zinc-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+        </div>
         <h3 className="text-xl font-semibold mb-2">Connect Your Wallet</h3>
         <p className="text-zinc-400">Connect your wallet to view analytics</p>
       </div>
@@ -132,7 +146,21 @@ export default function AnalyticsPage() {
       <div>
         <h2 className="text-2xl font-bold mb-6">Analytics</h2>
         <div className="text-center py-16 glass-card rounded-xl">
-          <div className="text-5xl mb-4">📊</div>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+            <svg
+              className="w-8 h-8 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+          </div>
           <h3 className="text-xl font-semibold mb-2">No Data Yet</h3>
           <p className="text-zinc-400">Create payruns to see analytics</p>
         </div>

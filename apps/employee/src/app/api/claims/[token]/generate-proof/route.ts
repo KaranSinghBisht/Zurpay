@@ -155,15 +155,6 @@ export async function POST(
     const salaryCommitment = hexToBytes(claimToken.salaryCommitmentHex);
     const ciphertextHash = hexToBytes(claimToken.ciphertextHashHex);
 
-    console.log('=== PROOF GENERATION DEBUG ===');
-    console.log('orgIdHex:', org.orgIdHex);
-    console.log('payrunIdHex:', payrun.payrunIdHex);
-    console.log('merkleRootHex:', payrun.merkleRootHex);
-    console.log('salaryCommitmentHex:', claimToken.salaryCommitmentHex);
-    console.log('ciphertextHashHex:', claimToken.ciphertextHashHex);
-    console.log('employeeConfAccountAddress:', employeeConfAccountAddress);
-    console.log('payoutPubkeyHashHex:', bytesToHex(payoutPubkeyHash));
-
     const domainSepInput = new Uint8Array(64);
     domainSepInput.set(orgId, 0);
     domainSepInput.set(payrunId, 32);
@@ -173,8 +164,6 @@ export async function POST(
     nullifierInput.set(domainSep, 0);
     nullifierInput.set(employeeSecret, 32);
     const nullifier = sha256(nullifierInput);
-
-    console.log('nullifierHex:', bytesToHex(nullifier));
 
     const useMockProver = process.env.USE_MOCK_PROVER === 'true';
 
@@ -275,10 +264,6 @@ path_indices = [${pathIndices.map((i) => (i ? 'true' : 'false')).join(', ')}]
           fixedPublicInputs[i + 2] = b1;
           fixedPublicInputs[i + 3] = b0;
         }
-
-        console.log('=== ENDIANNESS FIX ===');
-        console.log('Original header (BE):', publicInputsBytes.slice(0, 12).toString('hex'));
-        console.log('Fixed header (LE):', fixedPublicInputs.slice(0, 12).toString('hex'));
 
         proofB64 = proofBytes.toString('base64');
         publicInputsB64 = fixedPublicInputs.toString('base64');
