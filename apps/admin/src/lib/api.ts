@@ -377,6 +377,32 @@ export interface RecurringSchedule {
   createdAt: string;
 }
 
+export interface PaymentRequest {
+  id: string;
+  orgId: string;
+  recipientWallet: string;
+  recipientConfAccount: string | null;
+  recipientEmail: string | null;
+  amount: string;
+  currency: string;
+  memo: string | null;
+  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+  paidBy: string | null;
+  paidAt: string | null;
+  payoutTxSig: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface PaymentRequestStats {
+  pending: number;
+  paid: number;
+  cancelled: number;
+  expired: number;
+  total: number;
+  pendingAmount: string;
+}
+
 export const api = {
   orgs: {
     list: (wallet: string) => fetchApi<Org[]>('/api/v1/orgs', { wallet }),
@@ -957,5 +983,39 @@ export const api = {
           wallet,
         }
       ),
+  },
+
+  paymentRequests: {
+    list: (
+      orgId: string,
+      wallet: string,
+      params?: { status?: string; limit?: number; offset?: number }
+    ) => {
+      const query = new URLSearchParams(params as Record<string, string>).toString();
+      return fetchApi<PaymentRequest[]>(
+        `/api/v1/orgs/${orgId}/payment-requests${query ? `?${query}` : ''}`,
+        { wallet }
+      );
+    },
+
+    get: (orgId: string, requestId: string, wallet: string) =>
+      fetchApi<PaymentRequest>(`/api/v1/orgs/${orgId}/payment-requests/${requestId}`, { wallet }),
+
+    getStats: (orgId: string, wallet: string) =>
+      fetchApi<PaymentRequestStats>(`/api/v1/orgs/${orgId}/payment-requests/stats`, { wallet }),
+
+    approve: (orgId: string, requestId: string, data: { txSignature?: string }, wallet: string) =>
+      fetchApi<PaymentRequest>(`/api/v1/orgs/${orgId}/payment-requests/${requestId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        wallet,
+      }),
+
+    reject: (orgId: string, requestId: string, data: { reason?: string }, wallet: string) =>
+      fetchApi<PaymentRequest>(`/api/v1/orgs/${orgId}/payment-requests/${requestId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        wallet,
+      }),
   },
 };

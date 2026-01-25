@@ -410,6 +410,29 @@ exports.Prisma.RecurringScheduleScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.PaymentRequestScalarFieldEnum = {
+  id: 'id',
+  recipientWallet: 'recipientWallet',
+  recipientConfAccount: 'recipientConfAccount',
+  recipientEmail: 'recipientEmail',
+  amount: 'amount',
+  currency: 'currency',
+  memo: 'memo',
+  orgId: 'orgId',
+  status: 'status',
+  salaryCommitmentHex: 'salaryCommitmentHex',
+  ciphertextHashHex: 'ciphertextHashHex',
+  encryptedAmountB64: 'encryptedAmountB64',
+  nullifierHex: 'nullifierHex',
+  merkleRootHex: 'merkleRootHex',
+  paidBy: 'paidBy',
+  paidAt: 'paidAt',
+  payoutTxSig: 'payoutTxSig',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.LegacyPayrunScalarFieldEnum = {
   id: 'id',
   orgId: 'orgId',
@@ -560,6 +583,13 @@ exports.ScheduleStatus = exports.$Enums.ScheduleStatus = {
   CANCELLED: 'CANCELLED'
 };
 
+exports.PaymentRequestStatus = exports.$Enums.PaymentRequestStatus = {
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  EXPIRED: 'EXPIRED',
+  CANCELLED: 'CANCELLED'
+};
+
 exports.Prisma.ModelName = {
   Org: 'Org',
   OrgMember: 'OrgMember',
@@ -578,6 +608,7 @@ exports.Prisma.ModelName = {
   MultisigProposal: 'MultisigProposal',
   ApprovalRequest: 'ApprovalRequest',
   RecurringSchedule: 'RecurringSchedule',
+  PaymentRequest: 'PaymentRequest',
   LegacyPayrun: 'LegacyPayrun',
   LegacyClaimPackage: 'LegacyClaimPackage'
 };

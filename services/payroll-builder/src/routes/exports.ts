@@ -51,7 +51,8 @@ router.get(
         const amount = BigInt(payslip.amount);
         totalAmount += amount;
         const amountUsd = (Number(amount) / 1_000_000).toFixed(2);
-        const workerName = payslip.worker.displayName || payslip.worker.wallet.slice(0, 8);
+        const workerName =
+          payslip.worker.displayName || payslip.worker.wallet?.slice(0, 8) || 'Unknown';
 
         csvLines.push(
           `${periodStr},Payroll Expense,${workerName} - ${payslip.currency},${amountUsd},,${payslip.payoutTxSig || payslip.id}`

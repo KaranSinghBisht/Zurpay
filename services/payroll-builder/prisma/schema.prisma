@@ -43,6 +43,7 @@ model Org {
   ledgerEntries LedgerEntry[]
   multisigProposals MultisigProposal[]
   recurringSchedules RecurringSchedule[]
+  paymentRequests PaymentRequest[]
 
   @@index([ownerWallet])
 }
@@ -82,37 +83,56 @@ enum WorkerType {
 }
 
 enum WorkerStatus {
+  INVITED
   ACTIVE
   INACTIVE
 }
 
-model Worker {
-  id                  String       @id @default(cuid())
-  orgId               String
-  wallet              String       // Worker's wallet pubkey (base58)
-  claimerConfAccount  String?      // Inco confidential account for payouts
-  type                WorkerType   @default(EMPLOYEE)
-  status              WorkerStatus @default(ACTIVE)
-  
-  // Optional metadata (stored privately, never on-chain)
-  displayName         String?
-  email               String?
-  externalId          String?      // For integration with external HR systems
-  
-  startDate           DateTime?
-  endDate             DateTime?
-  metadata            String?      // JSON blob for additional data
-  
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+model WorkerInvite {
+  id         String    @id @default(cuid())
+  workerId   String    @unique
+  token      String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
 
-  // Relations
-  org       Org        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Worker {
+  id                 String       @id @default(cuid())
+  orgId              String
+  email              String?
+  googleId           String?
+  wallet             String?
+  type               WorkerType   @default(EMPLOYEE)
+  status             WorkerStatus @default(ACTIVE)
+  claimerConfAccount String?
+
+  displayName String?
+  externalId  String?
+
+  startDate DateTime?
+  endDate   DateTime?
+  metadata  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org       Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
   compPlans CompPlan[]
   payslips  Payslip[]
+  invite    WorkerInvite?
 
+  @@unique([orgId, email])
   @@unique([orgId, wallet])
   @@index([orgId, status])
+  @@index([googleId])
 }
 
 enum PaySchedule {
@@ -465,28 +485,41 @@ model SiwsNonce {
 // =============================================================================
 
 model ClaimToken {
-  id            String   @id @default(cuid())
-  tokenHash     String   @unique // sha256(token) - never stores the actual token
-  payrunId      String   // Payrun this token belongs to
-  payslipId     String?  // Optional: if token is for a specific payslip
-  paylinkId     String?  // Optional: if token is for a paylink
+  id        String  @id @default(cuid())
+  tokenHash String  @unique
+  payrunId  String
+  payslipId String?
+  paylinkId String?
+
+  expectedEmail String?
+
+  employeeSecretEnc String?
+  merklePathJson    String?
+  pathIndicesJson   String?
+  leafIndex         Int?
+
+  salaryCommitmentHex   String?
+  ciphertextHashHex     String?
+  employeeCommitmentHex String?
+  nullifierHex          String?
+  encryptedAmountB64    String?
+
   claimPackageJson String?
-  
-  // Token metadata
-  issuedAt      DateTime @default(now())    // When token was created
-  expiresAt     DateTime                       // When token expires
-  usedAt        DateTime?                      // When token was used
-  
-  // Relations (for cleanup and auditing)
-  payslip      Payslip?  @relation(fields: [payslipId], references: [id])
-  paylink       Paylink?  @relation(fields: [paylinkId], references: [id])
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  payslip Payslip? @relation(fields: [payslipId], references: [id])
+  paylink Paylink? @relation(fields: [paylinkId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([tokenHash])
   @@index([expiresAt])
   @@index([payrunId])
+  @@index([expectedEmail])
 }
 
 // =============================================================================
@@ -652,6 +685,61 @@ model RecurringSchedule {
 
   @@index([orgId, status])
   @@index([nextRunAt])
+}
+
+// =============================================================================
+// Payment Requests (Contractor → Org)
+// =============================================================================
+
+enum PaymentRequestStatus {
+  PENDING   // Awaiting payment
+  PAID      // Successfully paid
+  EXPIRED   // Past expiry date
+  CANCELLED // Recipient cancelled
+}
+
+model PaymentRequest {
+  id String @id @default(cuid())
+
+  // Recipient info (who's requesting payment)
+  recipientWallet      String  // Recipient's wallet pubkey (base58)
+  recipientConfAccount String? // Recipient's Inco confidential account
+  recipientEmail       String? // Optional for notifications
+
+  // Request details
+  amount   String // Requested amount (USDC, 6 decimals)
+  currency String @default("USDC")
+  memo     String? // "Hackathon prize", "Freelance work", etc.
+
+  // Org link (for contractor → org requests)
+  orgId String
+
+  // Status
+  status PaymentRequestStatus @default(PENDING)
+
+  // Privacy/ZK fields (populated when paid)
+  salaryCommitmentHex String?
+  ciphertextHashHex   String?
+  encryptedAmountB64  String?
+  nullifierHex        String?
+  merkleRootHex       String?
+
+  // Payer info (populated when paid)
+  paidBy      String? // Payer wallet
+  paidAt      DateTime?
+  payoutTxSig String?
+
+  // Metadata
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([recipientWallet])
+  @@index([status])
+  @@index([orgId, status])
 }
 
 // =============================================================================

@@ -7,8 +7,24 @@ import { AuthenticatedRequest, requireWallet, requireOrg } from '../middleware/a
 import { createAuditLog, AuditActions } from '../services/audit';
 import { emailService } from '../services/email';
 import { MemberRole, PaylinkStatus, LedgerEntryType } from '../generated/prisma';
-import { computeSalaryCommitment, computeCiphertextHash, bytesToHex } from '@zurpay/sdk';
-import { decryptToken, encryptAmountForInco, encryptToken, hashToken } from '../crypto';
+import {
+  computeSalaryCommitment,
+  computeCiphertextHash,
+  computeEmployeeCommitment,
+  computeNullifier,
+  computeLeafV2,
+  MerkleTree,
+  bytesToHex,
+  hexToBytes,
+  generateSecret,
+} from '@zurpay/sdk';
+import {
+  decryptToken,
+  encryptAmountForInco,
+  encryptToken,
+  encryptSecret,
+  hashToken,
+} from '../crypto';
 
 const router = Router();
 
@@ -121,31 +137,85 @@ router.post(
       const data = CreatePaylinkSchema.parse(req.body);
       const orgId = req.params.orgId;
 
+      const org = await prisma.org.findUnique({
+        where: { id: orgId },
+        select: { orgIdHex: true, name: true },
+      });
+      if (!org) {
+        return res.status(404).json({ error: 'Organization not found' });
+      }
+
       const amountBigInt = BigInt(data.amount);
-      const blinding = randomBytes(32);
-      const salaryCommitment = computeSalaryCommitment(amountBigInt, new Uint8Array(blinding));
+      const employeeSecret = generateSecret();
+      const employeeCommitment = computeEmployeeCommitment(employeeSecret);
+      const salaryCommitment = computeSalaryCommitment(amountBigInt, employeeSecret);
       const encryptedAmount = await encryptAmountForInco(amountBigInt);
       const ciphertextHash = computeCiphertextHash(encryptedAmount);
+
+      const paylinkIdBytes = randomBytes(32);
+      const orgIdBytes = hexToBytes(org.orgIdHex);
+      const nullifier = computeNullifier(orgIdBytes, paylinkIdBytes, employeeSecret);
+
+      const dummyPayoutPubkeyHash = new Uint8Array(32);
+      const leaf = computeLeafV2(
+        paylinkIdBytes,
+        employeeCommitment,
+        salaryCommitment,
+        ciphertextHash,
+        dummyPayoutPubkeyHash
+      );
+      const tree = new MerkleTree([leaf]);
+      const merkleRoot = tree.root;
+      const { path, indices } = tree.getProof(0);
+
       const token = bytesToHex(randomBytes(32));
       const tokenHash = hashToken(token);
       const tokenCiphertext = encryptToken(token);
+      const employeeSecretEnc = encryptSecret(employeeSecret);
 
-      const paylink = await prisma.paylink.create({
-        data: {
-          orgId,
-          amount: data.amount,
-          currency: data.currency,
-          recipientWallet: data.recipientWallet,
-          recipientConfAccount: data.recipientConfAccount,
-          salaryCommitmentHex: bytesToHex(salaryCommitment),
-          ciphertextHashHex: bytesToHex(ciphertextHash),
-          encryptedAmountB64: Buffer.from(encryptedAmount).toString('base64'),
-          tokenHash,
-          tokenCiphertext,
-          expiresAt: new Date(data.expiresAt),
-          memo: data.memo,
-          createdBy: req.wallet!,
-        },
+      const expiresAt = new Date(data.expiresAt);
+
+      const paylink = await prisma.$transaction(async (tx) => {
+        const pl = await tx.paylink.create({
+          data: {
+            orgId,
+            amount: data.amount,
+            currency: data.currency,
+            recipientWallet: data.recipientWallet,
+            recipientConfAccount: data.recipientConfAccount,
+            salaryCommitmentHex: bytesToHex(salaryCommitment),
+            ciphertextHashHex: bytesToHex(ciphertextHash),
+            encryptedAmountB64: Buffer.from(encryptedAmount).toString('base64'),
+            nullifierHex: bytesToHex(nullifier),
+            merkleRootHex: bytesToHex(merkleRoot),
+            tokenHash,
+            tokenCiphertext,
+            expiresAt,
+            memo: data.memo,
+            createdBy: req.wallet!,
+          },
+        });
+
+        await tx.claimToken.create({
+          data: {
+            tokenHash,
+            payrunId: bytesToHex(paylinkIdBytes),
+            paylinkId: pl.id,
+            expectedEmail: data.recipientEmail,
+            employeeSecretEnc,
+            merklePathJson: JSON.stringify(path.map((p) => bytesToHex(p))),
+            pathIndicesJson: JSON.stringify(indices),
+            leafIndex: 0,
+            salaryCommitmentHex: bytesToHex(salaryCommitment),
+            ciphertextHashHex: bytesToHex(ciphertextHash),
+            employeeCommitmentHex: bytesToHex(employeeCommitment),
+            nullifierHex: bytesToHex(nullifier),
+            encryptedAmountB64: Buffer.from(encryptedAmount).toString('base64'),
+            expiresAt,
+          },
+        });
+
+        return pl;
       });
 
       await createAuditLog({
@@ -162,20 +232,15 @@ router.post(
 
       let emailSent = false;
       if (data.sendEmail && data.recipientEmail) {
-        const org = await prisma.org.findUnique({
-          where: { id: orgId },
-          select: { name: true },
-        });
-
         emailSent = await emailService.sendClaimLink({
           to: data.recipientEmail,
           recipientName: data.recipientName,
-          orgName: org?.name || 'Unknown Organization',
+          orgName: org.name,
           amount: data.amount,
           currency: data.currency,
           claimToken: token,
           paylinkId: paylink.id,
-          expiresAt: new Date(data.expiresAt),
+          expiresAt,
           memo: data.memo,
         });
       }

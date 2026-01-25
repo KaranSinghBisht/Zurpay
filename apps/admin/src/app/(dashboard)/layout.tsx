@@ -15,6 +15,7 @@ import {
   Link as LinkIcon,
   CheckCircle,
   Calendar,
+  FileText,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -60,6 +61,7 @@ const menuItems = [
   { icon: CheckCircle, label: 'Approvals', path: '/dashboard/approvals' },
   { icon: Calendar, label: 'Schedules', path: '/dashboard/schedules' },
   { icon: LinkIcon, label: 'Paylinks', path: '/dashboard/paylinks' },
+  { icon: FileText, label: 'Requests', path: '/dashboard/requests' },
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
 ];
 

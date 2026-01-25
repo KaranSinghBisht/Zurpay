@@ -696,6 +696,58 @@ model RecurringSchedule {
 }
 
 // =============================================================================
+// Payment Requests (Recipient-initiated P2P payments)
+// =============================================================================
+
+enum PaymentRequestStatus {
+  PENDING // Awaiting payment
+  PAID // Successfully paid
+  EXPIRED // Past expiry date
+  CANCELLED // Recipient cancelled
+}
+
+model PaymentRequest {
+  id String @id @default(cuid())
+
+  // Recipient info (who's requesting payment)
+  recipientWallet      String // Recipient's wallet pubkey (base58)
+  recipientConfAccount String? // Recipient's Inco confidential account
+  recipientEmail       String? // Optional for notifications
+
+  // Request details
+  amount   String // Requested amount (USDC, 6 decimals)
+  currency String @default("USDC")
+  memo     String? // "Hackathon prize", "Freelance work", etc.
+
+  // Optional org link (for contractor → org requests)
+  orgId String? // If tied to an org
+
+  // Status
+  status PaymentRequestStatus @default(PENDING)
+
+  // Privacy/ZK fields (populated when paid)
+  salaryCommitmentHex String?
+  ciphertextHashHex   String?
+  encryptedAmountB64  String?
+  nullifierHex        String?
+  merkleRootHex       String?
+
+  // Payer info (populated when paid)
+  paidBy      String? // Payer wallet
+  paidAt      DateTime?
+  payoutTxSig String?
+
+  // Metadata
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([recipientWallet])
+  @@index([status])
+  @@index([orgId])
+}
+
+// =============================================================================
 // Legacy Tables (Preserved for backwards compatibility)
 // These mirror the original MVP schema to keep legacy endpoints functional
 // =============================================================================

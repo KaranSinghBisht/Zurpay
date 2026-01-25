@@ -12,6 +12,8 @@ import {
   ZURPAY_PROGRAM_ID,
   DEFAULT_INCO_PROGRAM_ID,
   DEFAULT_ZK_VERIFIER_PROGRAM_ID,
+  hexToBytes,
+  deriveEmployeeConfPda,
 } from '@zurpay/sdk';
 import { ConfettiCelebration } from '../../../components/ConfettiCelebration';
 import { BalanceViewer } from '../../../components/BalanceViewer';
@@ -28,9 +30,9 @@ export default function PaylinkClaimPage() {
   const token = searchParams?.get('token') ?? null;
 
   const [paylinkInfo, setPaylinkInfo] = useState<PaylinkInfo | null>(null);
-  const [claimPackage, setClaimPackage] = useState<ClaimPackageV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [claimStep, setClaimStep] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [txSig, setTxSig] = useState<string | null>(null);
@@ -47,10 +49,7 @@ export default function PaylinkClaimPage() {
 
   const loadPaylinkData = async () => {
     try {
-      const [infoResult, packageResult] = await Promise.all([
-        employeeApi.paylinks.getClaimInfo(token!),
-        employeeApi.claims.getPackage(token!),
-      ]);
+      const infoResult = await employeeApi.paylinks.getClaimInfo(token!);
 
       if (!infoResult.ok) {
         throw new Error(infoResult.error || `HTTP ${infoResult.status}`);
@@ -61,10 +60,6 @@ export default function PaylinkClaimPage() {
       }
 
       setPaylinkInfo(infoResult.data);
-
-      if (packageResult.ok && packageResult.data) {
-        setClaimPackage(packageResult.data);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load paylink');
     } finally {
@@ -73,7 +68,7 @@ export default function PaylinkClaimPage() {
   };
 
   const handleClaim = async () => {
-    if (!publicKey || !signTransaction || !token || !claimPackage) {
+    if (!publicKey || !signTransaction || !token || !paylinkInfo) {
       setError('Missing required data for claim');
       return;
     }
@@ -82,75 +77,34 @@ export default function PaylinkClaimPage() {
     setError(null);
 
     try {
-      // Debug logging to identify problematic fields
-      console.log('=== ClaimPackage Debug ===');
-      console.log('version:', claimPackage.version);
-      console.log('orgIdHex:', claimPackage.orgIdHex, 'length:', claimPackage.orgIdHex?.length);
-      console.log(
-        'payrunIdHex:',
-        claimPackage.payrunIdHex,
-        'length:',
-        claimPackage.payrunIdHex?.length
-      );
-      console.log('claimerConfAccount:', claimPackage.claimerConfAccount);
-      console.log('treasuryConfAccount:', claimPackage.treasuryConfAccount);
-      console.log('zkVerifierProgramId:', claimPackage.zkVerifierProgramId);
-      console.log('incoProgramId:', claimPackage.incoProgramId);
-      console.log('proofB64 length:', claimPackage.proofB64?.length);
-      console.log('publicInputsB64 length:', claimPackage.publicInputsB64?.length);
-      console.log('encryptedAmountB64 length:', claimPackage.encryptedAmountB64?.length);
-      console.log(
-        'nullifierHex:',
-        claimPackage.nullifierHex,
-        'length:',
-        claimPackage.nullifierHex?.length
-      );
-      console.log(
-        'payoutPubkeyHashHex:',
-        claimPackage.payoutPubkeyHashHex,
-        'length:',
-        claimPackage.payoutPubkeyHashHex?.length
-      );
-      console.log(
-        'salaryCommitmentHex:',
-        claimPackage.salaryCommitmentHex,
-        'length:',
-        claimPackage.salaryCommitmentHex?.length
-      );
-      console.log(
-        'ciphertextHashHex:',
-        claimPackage.ciphertextHashHex,
-        'length:',
-        claimPackage.ciphertextHashHex?.length
-      );
-      console.log(
-        'merkleRootHex:',
-        claimPackage.merkleRootHex,
-        'length:',
-        claimPackage.merkleRootHex?.length
-      );
-      console.log('=========================');
+      setClaimStep('Generating ZK proof...');
+
+      const orgIdHex = (paylinkInfo as any).orgIdHex || '';
+      const orgIdBytes = orgIdHex ? hexToBytes(orgIdHex) : new Uint8Array(32);
+      const employeeConf = deriveEmployeeConfPda(orgIdBytes, publicKey, ZURPAY_PROGRAM_ID);
+
+      const proofResult = await employeeApi.paylinks.generateProof(token, {
+        walletAddress: publicKey.toBase58(),
+        employeeConfAccountAddress: employeeConf.toBase58(),
+      });
+
+      if (!proofResult.ok || !proofResult.data) {
+        throw new Error(proofResult.error || 'Failed to generate proof');
+      }
+
+      const claimPackage = proofResult.data;
+
+      setClaimStep('Initializing confidential account...');
 
       const {
         org: orgPda,
         payrun: payrunPda,
         treasury,
-        employeeConf,
       } = deriveClaimPdas(
         claimPackage.orgIdHex,
         claimPackage.payrunIdHex,
         publicKey,
         ZURPAY_PROGRAM_ID
-      );
-      console.log(
-        'Derived PDAs - org:',
-        orgPda.toBase58(),
-        'payrun:',
-        payrunPda.toBase58(),
-        'treasury:',
-        treasury.toBase58(),
-        'employeeConf:',
-        employeeConf.toBase58()
       );
 
       const incoProgram = claimPackage.incoProgramId
@@ -159,7 +113,6 @@ export default function PaylinkClaimPage() {
 
       const employeeConfInfo = await connection.getAccountInfo(employeeConf);
       if (!employeeConfInfo) {
-        console.log('Initializing employee conf account...');
         await initEmployeeConf(
           connection,
           { publicKey, signTransaction },
@@ -167,8 +120,9 @@ export default function PaylinkClaimPage() {
           incoProgram,
           ZURPAY_PROGRAM_ID
         );
-        console.log('Employee conf account initialized');
       }
+
+      setClaimStep('Submitting claim transaction...');
 
       const zkVerifierProgram = claimPackage.zkVerifierProgramId
         ? new PublicKey(claimPackage.zkVerifierProgramId)
@@ -199,7 +153,6 @@ export default function PaylinkClaimPage() {
           handle = handle | (BigInt(balanceBytes[i]) << BigInt(i * 8));
         }
         const handleHex = '0x' + handle.toString(16).padStart(32, '0');
-        console.log('Employee balance handle:', handleHex);
         setBalanceHandle(handleHex);
       }
 
@@ -215,6 +168,7 @@ export default function PaylinkClaimPage() {
       setError(err instanceof Error ? err.message : 'Failed to claim paylink');
     } finally {
       setClaiming(false);
+      setClaimStep('');
     }
   };
 
@@ -338,12 +292,6 @@ export default function PaylinkClaimPage() {
           </div>
         )}
 
-        {!claimPackage && (
-          <div className="p-3 bg-yellow-900/50 border border-yellow-700 rounded-lg text-yellow-300 text-sm mb-4">
-            Claim package not ready. The payrun may need to be validated first.
-          </div>
-        )}
-
         {!connected ? (
           <div className="text-center">
             <p className="text-zinc-400 mb-4">Connect your wallet to claim this payment</p>
@@ -351,16 +299,14 @@ export default function PaylinkClaimPage() {
         ) : (
           <button
             onClick={handleClaim}
-            disabled={claiming || !claimPackage}
+            disabled={claiming}
             className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
           >
             {claiming ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Claiming...
+                {claimStep || 'Processing...'}
               </span>
-            ) : !claimPackage ? (
-              'Claim Not Available'
             ) : (
               'Claim Payment'
             )}

@@ -78,3 +78,21 @@ export function decryptToken(ciphertextB64: string): string {
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
 }
+
+export function encryptSecret(secret: Uint8Array): string {
+  const key = getEncryptionKey();
+  const iv = randomBytes(16);
+  const cipher = createCipheriv('aes-256-cbc', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(secret), cipher.final()]);
+  return `${iv.toString('hex')}:${ciphertext.toString('hex')}`;
+}
+
+export function decryptSecret(encryptedData: string): Uint8Array {
+  const [ivHex, encryptedHex] = encryptedData.split(':');
+  const iv = Buffer.from(ivHex, 'hex');
+  const encrypted = Buffer.from(encryptedHex, 'hex');
+  const key = getEncryptionKey();
+  const decipher = createDecipheriv('aes-256-cbc', key, iv);
+  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+  return new Uint8Array(decrypted);
+}
