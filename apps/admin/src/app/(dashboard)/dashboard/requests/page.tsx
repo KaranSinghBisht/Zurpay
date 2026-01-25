@@ -1,11 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey, Keypair, Transaction, SystemProgram } from '@solana/web3.js';
+import {
+  INCO_TOKEN_PROGRAM_ID,
+  DEFAULT_INCO_PROGRAM_ID,
+  transferIncoTokens,
+  fetchIncoAccount,
+  buildInitializeAccountInstruction,
+  INCO_ACCOUNT_SIZE,
+} from '@zurpay/sdk';
+import { encryptValue } from '@inco/solana-sdk/encryption';
+import { hexToBuffer } from '@inco/solana-sdk/utils';
 import { api, PaymentRequest, PaymentRequestStats, Org } from '../../../../lib/api';
 
 export default function PaymentRequestsPage() {
-  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const { publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58();
 
   const [org, setOrg] = useState<Org | null>(null);
@@ -17,6 +29,7 @@ export default function PaymentRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [transferStep, setTransferStep] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -60,17 +73,78 @@ export default function PaymentRequestsPage() {
   };
 
   const handleApprove = async (requestId: string) => {
-    if (!org || !wallet) return;
-    if (!confirm('Approve this payment request? This will mark it as paid.')) return;
+    if (!org || !wallet || !publicKey || !signTransaction) return;
+
+    const request = requests.find((r) => r.id === requestId);
+    if (!request) return;
+
+    if (
+      !confirm(
+        `Approve and pay ${formatAmount(request.amount)} to ${request.recipientWallet.slice(0, 8)}...?\n\nThis will execute a confidential transfer from the treasury.`
+      )
+    )
+      return;
 
     try {
       setActionLoading(requestId);
-      await api.paymentRequests.approve(org.id, requestId, {}, wallet);
+      setError(null);
+
+      const treasuryAccount = new PublicKey(org.treasuryConfAccount);
+      let recipientAccount: PublicKey;
+
+      if (request.recipientConfAccount) {
+        recipientAccount = new PublicKey(request.recipientConfAccount);
+      } else {
+        recipientAccount = Keypair.generate().publicKey;
+        setError('Recipient does not have a confidential account. They need to create one first.');
+        return;
+      }
+
+      setTransferStep('Checking accounts...');
+
+      const [treasuryInfo, recipientInfo] = await Promise.all([
+        fetchIncoAccount(connection, treasuryAccount),
+        fetchIncoAccount(connection, recipientAccount),
+      ]);
+
+      if (!treasuryInfo || treasuryInfo.state !== 'initialized') {
+        throw new Error('Treasury account not initialized');
+      }
+
+      if (!recipientInfo || recipientInfo.state !== 'initialized') {
+        throw new Error(
+          'Recipient confidential account not initialized. They need to set it up first.'
+        );
+      }
+
+      setTransferStep('Encrypting amount...');
+      const amountBigInt = BigInt(request.amount);
+      const encryptedHex = await encryptValue(amountBigInt);
+      const encryptedAmount = new Uint8Array(hexToBuffer(encryptedHex));
+
+      setTransferStep('Executing confidential transfer...');
+      const signature = await transferIncoTokens(
+        connection,
+        { publicKey, signTransaction },
+        treasuryAccount,
+        recipientAccount,
+        encryptedAmount,
+        INCO_TOKEN_PROGRAM_ID,
+        DEFAULT_INCO_PROGRAM_ID
+      );
+
+      setTransferStep('Recording payment...');
+      await api.paymentRequests.approve(org.id, requestId, { txSignature: signature }, wallet);
+
+      setSuccessMessage('Payment sent successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
       loadData();
     } catch (err) {
+      console.error('Approve error:', err);
       setError(err instanceof Error ? err.message : 'Failed to approve request');
     } finally {
       setActionLoading(null);
+      setTransferStep('');
     }
   };
 
@@ -358,9 +432,16 @@ export default function PaymentRequestsPage() {
                   <button
                     onClick={() => handleApprove(request.id)}
                     disabled={actionLoading === request.id}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors flex items-center gap-2"
                   >
-                    {actionLoading === request.id ? 'Processing...' : 'Approve & Pay'}
+                    {actionLoading === request.id ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        {transferStep || 'Processing...'}
+                      </>
+                    ) : (
+                      'Approve & Pay'
+                    )}
                   </button>
                   <button
                     onClick={() => handleReject(request.id)}

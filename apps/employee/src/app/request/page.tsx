@@ -1,12 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useState, useEffect } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { Keypair, SystemProgram, Transaction } from '@solana/web3.js';
+import {
+  INCO_TOKEN_PROGRAM_ID,
+  DEFAULT_INCO_PROGRAM_ID,
+  fetchIncoAccount,
+  buildInitializeAccountInstruction,
+  INCO_ACCOUNT_SIZE,
+} from '@zurpay/sdk';
 import { employeeApi } from '../../lib/api';
 
+const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
 export default function RequestPaymentPage() {
+  const { connection } = useConnection();
   const wallet = useWallet();
-  const { publicKey, signMessage, connected } = wallet;
+  const { publicKey, signMessage, signTransaction, connected } = wallet;
 
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
@@ -17,10 +28,98 @@ export default function RequestPaymentPage() {
     payUrl: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confAccount, setConfAccount] = useState<string | null>(null);
+  const [checkingAccount, setCheckingAccount] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
+
+  useEffect(() => {
+    if (publicKey && connected) {
+      checkConfAccount();
+    }
+  }, [publicKey, connected]);
+
+  const checkConfAccount = async () => {
+    if (!publicKey) return;
+
+    setCheckingAccount(true);
+    try {
+      const storedAccount = localStorage.getItem(`inco_account_${publicKey.toBase58()}`);
+      if (storedAccount) {
+        const accountInfo = await fetchIncoAccount(
+          connection,
+          new (await import('@solana/web3.js')).PublicKey(storedAccount)
+        );
+        if (accountInfo && accountInfo.state === 'initialized') {
+          setConfAccount(storedAccount);
+          return;
+        }
+      }
+      setConfAccount(null);
+    } catch (err) {
+      console.error('Error checking conf account:', err);
+      setConfAccount(null);
+    } finally {
+      setCheckingAccount(false);
+    }
+  };
+
+  const handleCreateConfAccount = async () => {
+    if (!publicKey || !signTransaction) return;
+
+    setCreatingAccount(true);
+    setError(null);
+
+    try {
+      const { PublicKey: PK } = await import('@solana/web3.js');
+      const mintPubkey = new PK(USDC_MINT);
+      const newAccount = Keypair.generate();
+
+      const lamports = await connection.getMinimumBalanceForRentExemption(INCO_ACCOUNT_SIZE);
+
+      const createAccountIx = SystemProgram.createAccount({
+        fromPubkey: publicKey,
+        newAccountPubkey: newAccount.publicKey,
+        lamports,
+        space: INCO_ACCOUNT_SIZE,
+        programId: INCO_TOKEN_PROGRAM_ID,
+      });
+
+      const initAccountIx = buildInitializeAccountInstruction(
+        newAccount.publicKey,
+        mintPubkey,
+        publicKey,
+        publicKey,
+        INCO_TOKEN_PROGRAM_ID,
+        DEFAULT_INCO_PROGRAM_ID
+      );
+
+      const transaction = new Transaction().add(createAccountIx, initAccountIx);
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+      transaction.partialSign(newAccount);
+
+      const signedTx = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
+
+      const accountAddress = newAccount.publicKey.toBase58();
+      localStorage.setItem(`inco_account_${publicKey.toBase58()}`, accountAddress);
+      setConfAccount(accountAddress);
+    } catch (err) {
+      console.error('Error creating conf account:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create confidential account');
+    } finally {
+      setCreatingAccount(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!publicKey || !signMessage) return;
+    if (!publicKey || !signMessage || !confAccount) return;
 
     setLoading(true);
     setError(null);
@@ -30,13 +129,13 @@ export default function RequestPaymentPage() {
       const message = `Create Zurpay payment request for ${amountInMicroUsdc} USDC`;
       const messageBytes = new TextEncoder().encode(message);
       const signatureBytes = await signMessage(messageBytes);
-      const signatureBase58 = Buffer.from(signatureBytes).toString('base64');
 
       const bs58Module = await import('bs58');
       const signatureB58 = bs58Module.default.encode(signatureBytes);
 
       const result = await employeeApi.paymentRequests.create({
         recipientWallet: publicKey.toBase58(),
+        recipientConfAccount: confAccount,
         amount: amountInMicroUsdc,
         currency: 'USDC',
         memo: memo || undefined,
@@ -186,6 +285,43 @@ export default function RequestPaymentPage() {
             <p className="text-zinc-400 mb-4">Connect your wallet to create a payment request</p>
             <p className="text-sm text-zinc-500">
               Your wallet address will receive the confidential payment
+            </p>
+          </div>
+        ) : checkingAccount ? (
+          <div className="text-center py-8">
+            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-zinc-400">Checking confidential account...</p>
+          </div>
+        ) : !confAccount ? (
+          <div className="text-center space-y-6">
+            <div className="p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+              <p className="text-yellow-300 mb-2">Confidential Account Required</p>
+              <p className="text-sm text-zinc-400">
+                To receive private payments, you need to create a confidential token account first.
+              </p>
+            </div>
+            <button
+              onClick={handleCreateConfAccount}
+              disabled={creatingAccount}
+              className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors font-medium"
+            >
+              {creatingAccount ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creating Account...
+                </span>
+              ) : (
+                'Create Confidential Account'
+              )}
+            </button>
+            {error && (
+              <div className="p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-300 text-sm">
+                {error}
+              </div>
+            )}
+            <p className="text-xs text-zinc-500">
+              This creates an on-chain account to hold your encrypted balances. Small SOL fee
+              required.
             </p>
           </div>
         ) : (

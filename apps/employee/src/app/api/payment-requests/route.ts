@@ -6,6 +6,7 @@ import bs58 from 'bs58';
 
 const CreatePaymentRequestSchema = z.object({
   recipientWallet: z.string().min(32).max(44),
+  recipientConfAccount: z.string().min(32).max(44).optional(),
   amount: z.string().regex(/^\d+$/, 'Amount must be a string of digits'),
   currency: z.string().default('USDC'),
   memo: z.string().max(500).optional(),
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
     const paymentRequest = await prisma.paymentRequest.create({
       data: {
         recipientWallet: data.recipientWallet,
+        recipientConfAccount: data.recipientConfAccount,
         amount: data.amount,
         currency: data.currency,
         memo: data.memo,

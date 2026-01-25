@@ -120,6 +120,7 @@ export const employeeApi = {
   paymentRequests: {
     create: (payload: {
       recipientWallet: string;
+      recipientConfAccount?: string;
       amount: string;
       currency?: string;
       memo?: string;
