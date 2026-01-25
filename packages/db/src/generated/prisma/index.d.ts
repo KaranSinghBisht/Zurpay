@@ -11850,6 +11850,7 @@ export namespace Prisma {
   export type PaylinkMinAggregateOutputType = {
     id: string | null
     orgId: string | null
+    paylinkIdHex: string | null
     amount: string | null
     currency: string | null
     recipientWallet: string | null
@@ -11863,6 +11864,7 @@ export namespace Prisma {
     tokenCiphertext: string | null
     status: $Enums.PaylinkStatus | null
     expiresAt: Date | null
+    onChainTxSig: string | null
     claimedBy: string | null
     claimedAt: Date | null
     payoutTxSig: string | null
@@ -11875,6 +11877,7 @@ export namespace Prisma {
   export type PaylinkMaxAggregateOutputType = {
     id: string | null
     orgId: string | null
+    paylinkIdHex: string | null
     amount: string | null
     currency: string | null
     recipientWallet: string | null
@@ -11888,6 +11891,7 @@ export namespace Prisma {
     tokenCiphertext: string | null
     status: $Enums.PaylinkStatus | null
     expiresAt: Date | null
+    onChainTxSig: string | null
     claimedBy: string | null
     claimedAt: Date | null
     payoutTxSig: string | null
@@ -11900,6 +11904,7 @@ export namespace Prisma {
   export type PaylinkCountAggregateOutputType = {
     id: number
     orgId: number
+    paylinkIdHex: number
     amount: number
     currency: number
     recipientWallet: number
@@ -11913,6 +11918,7 @@ export namespace Prisma {
     tokenCiphertext: number
     status: number
     expiresAt: number
+    onChainTxSig: number
     claimedBy: number
     claimedAt: number
     payoutTxSig: number
@@ -11927,6 +11933,7 @@ export namespace Prisma {
   export type PaylinkMinAggregateInputType = {
     id?: true
     orgId?: true
+    paylinkIdHex?: true
     amount?: true
     currency?: true
     recipientWallet?: true
@@ -11940,6 +11947,7 @@ export namespace Prisma {
     tokenCiphertext?: true
     status?: true
     expiresAt?: true
+    onChainTxSig?: true
     claimedBy?: true
     claimedAt?: true
     payoutTxSig?: true
@@ -11952,6 +11960,7 @@ export namespace Prisma {
   export type PaylinkMaxAggregateInputType = {
     id?: true
     orgId?: true
+    paylinkIdHex?: true
     amount?: true
     currency?: true
     recipientWallet?: true
@@ -11965,6 +11974,7 @@ export namespace Prisma {
     tokenCiphertext?: true
     status?: true
     expiresAt?: true
+    onChainTxSig?: true
     claimedBy?: true
     claimedAt?: true
     payoutTxSig?: true
@@ -11977,6 +11987,7 @@ export namespace Prisma {
   export type PaylinkCountAggregateInputType = {
     id?: true
     orgId?: true
+    paylinkIdHex?: true
     amount?: true
     currency?: true
     recipientWallet?: true
@@ -11990,6 +12001,7 @@ export namespace Prisma {
     tokenCiphertext?: true
     status?: true
     expiresAt?: true
+    onChainTxSig?: true
     claimedBy?: true
     claimedAt?: true
     payoutTxSig?: true
@@ -12075,6 +12087,7 @@ export namespace Prisma {
   export type PaylinkGroupByOutputType = {
     id: string
     orgId: string
+    paylinkIdHex: string | null
     amount: string
     currency: string
     recipientWallet: string | null
@@ -12088,6 +12101,7 @@ export namespace Prisma {
     tokenCiphertext: string | null
     status: $Enums.PaylinkStatus
     expiresAt: Date
+    onChainTxSig: string | null
     claimedBy: string | null
     claimedAt: Date | null
     payoutTxSig: string | null
@@ -12117,6 +12131,7 @@ export namespace Prisma {
   export type PaylinkSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     orgId?: boolean
+    paylinkIdHex?: boolean
     amount?: boolean
     currency?: boolean
     recipientWallet?: boolean
@@ -12130,6 +12145,7 @@ export namespace Prisma {
     tokenCiphertext?: boolean
     status?: boolean
     expiresAt?: boolean
+    onChainTxSig?: boolean
     claimedBy?: boolean
     claimedAt?: boolean
     payoutTxSig?: boolean
@@ -12145,6 +12161,7 @@ export namespace Prisma {
   export type PaylinkSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     orgId?: boolean
+    paylinkIdHex?: boolean
     amount?: boolean
     currency?: boolean
     recipientWallet?: boolean
@@ -12158,6 +12175,7 @@ export namespace Prisma {
     tokenCiphertext?: boolean
     status?: boolean
     expiresAt?: boolean
+    onChainTxSig?: boolean
     claimedBy?: boolean
     claimedAt?: boolean
     payoutTxSig?: boolean
@@ -12171,6 +12189,7 @@ export namespace Prisma {
   export type PaylinkSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     orgId?: boolean
+    paylinkIdHex?: boolean
     amount?: boolean
     currency?: boolean
     recipientWallet?: boolean
@@ -12184,6 +12203,7 @@ export namespace Prisma {
     tokenCiphertext?: boolean
     status?: boolean
     expiresAt?: boolean
+    onChainTxSig?: boolean
     claimedBy?: boolean
     claimedAt?: boolean
     payoutTxSig?: boolean
@@ -12197,6 +12217,7 @@ export namespace Prisma {
   export type PaylinkSelectScalar = {
     id?: boolean
     orgId?: boolean
+    paylinkIdHex?: boolean
     amount?: boolean
     currency?: boolean
     recipientWallet?: boolean
@@ -12210,6 +12231,7 @@ export namespace Prisma {
     tokenCiphertext?: boolean
     status?: boolean
     expiresAt?: boolean
+    onChainTxSig?: boolean
     claimedBy?: boolean
     claimedAt?: boolean
     payoutTxSig?: boolean
@@ -12219,7 +12241,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type PaylinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orgId" | "amount" | "currency" | "recipientWallet" | "recipientConfAccount" | "salaryCommitmentHex" | "ciphertextHashHex" | "encryptedAmountB64" | "nullifierHex" | "merkleRootHex" | "tokenHash" | "tokenCiphertext" | "status" | "expiresAt" | "claimedBy" | "claimedAt" | "payoutTxSig" | "memo" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["paylink"]>
+  export type PaylinkOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "orgId" | "paylinkIdHex" | "amount" | "currency" | "recipientWallet" | "recipientConfAccount" | "salaryCommitmentHex" | "ciphertextHashHex" | "encryptedAmountB64" | "nullifierHex" | "merkleRootHex" | "tokenHash" | "tokenCiphertext" | "status" | "expiresAt" | "onChainTxSig" | "claimedBy" | "claimedAt" | "payoutTxSig" | "memo" | "createdBy" | "createdAt" | "updatedAt", ExtArgs["result"]["paylink"]>
   export type PaylinkInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     claimTokens?: boolean | Paylink$claimTokensArgs<ExtArgs>
     org?: boolean | OrgDefaultArgs<ExtArgs>
@@ -12241,6 +12263,7 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       orgId: string
+      paylinkIdHex: string | null
       amount: string
       currency: string
       recipientWallet: string | null
@@ -12254,6 +12277,7 @@ export namespace Prisma {
       tokenCiphertext: string | null
       status: $Enums.PaylinkStatus
       expiresAt: Date
+      onChainTxSig: string | null
       claimedBy: string | null
       claimedAt: Date | null
       payoutTxSig: string | null
@@ -12688,6 +12712,7 @@ export namespace Prisma {
   interface PaylinkFieldRefs {
     readonly id: FieldRef<"Paylink", 'String'>
     readonly orgId: FieldRef<"Paylink", 'String'>
+    readonly paylinkIdHex: FieldRef<"Paylink", 'String'>
     readonly amount: FieldRef<"Paylink", 'String'>
     readonly currency: FieldRef<"Paylink", 'String'>
     readonly recipientWallet: FieldRef<"Paylink", 'String'>
@@ -12701,6 +12726,7 @@ export namespace Prisma {
     readonly tokenCiphertext: FieldRef<"Paylink", 'String'>
     readonly status: FieldRef<"Paylink", 'PaylinkStatus'>
     readonly expiresAt: FieldRef<"Paylink", 'DateTime'>
+    readonly onChainTxSig: FieldRef<"Paylink", 'String'>
     readonly claimedBy: FieldRef<"Paylink", 'String'>
     readonly claimedAt: FieldRef<"Paylink", 'DateTime'>
     readonly payoutTxSig: FieldRef<"Paylink", 'String'>
@@ -27115,6 +27141,7 @@ export namespace Prisma {
   export const PaylinkScalarFieldEnum: {
     id: 'id',
     orgId: 'orgId',
+    paylinkIdHex: 'paylinkIdHex',
     amount: 'amount',
     currency: 'currency',
     recipientWallet: 'recipientWallet',
@@ -27128,6 +27155,7 @@ export namespace Prisma {
     tokenCiphertext: 'tokenCiphertext',
     status: 'status',
     expiresAt: 'expiresAt',
+    onChainTxSig: 'onChainTxSig',
     claimedBy: 'claimedBy',
     claimedAt: 'claimedAt',
     payoutTxSig: 'payoutTxSig',
@@ -28478,6 +28506,7 @@ export namespace Prisma {
     NOT?: PaylinkWhereInput | PaylinkWhereInput[]
     id?: StringFilter<"Paylink"> | string
     orgId?: StringFilter<"Paylink"> | string
+    paylinkIdHex?: StringNullableFilter<"Paylink"> | string | null
     amount?: StringFilter<"Paylink"> | string
     currency?: StringFilter<"Paylink"> | string
     recipientWallet?: StringNullableFilter<"Paylink"> | string | null
@@ -28491,6 +28520,7 @@ export namespace Prisma {
     tokenCiphertext?: StringNullableFilter<"Paylink"> | string | null
     status?: EnumPaylinkStatusFilter<"Paylink"> | $Enums.PaylinkStatus
     expiresAt?: DateTimeFilter<"Paylink"> | Date | string
+    onChainTxSig?: StringNullableFilter<"Paylink"> | string | null
     claimedBy?: StringNullableFilter<"Paylink"> | string | null
     claimedAt?: DateTimeNullableFilter<"Paylink"> | Date | string | null
     payoutTxSig?: StringNullableFilter<"Paylink"> | string | null
@@ -28505,6 +28535,7 @@ export namespace Prisma {
   export type PaylinkOrderByWithRelationInput = {
     id?: SortOrder
     orgId?: SortOrder
+    paylinkIdHex?: SortOrderInput | SortOrder
     amount?: SortOrder
     currency?: SortOrder
     recipientWallet?: SortOrderInput | SortOrder
@@ -28518,6 +28549,7 @@ export namespace Prisma {
     tokenCiphertext?: SortOrderInput | SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
+    onChainTxSig?: SortOrderInput | SortOrder
     claimedBy?: SortOrderInput | SortOrder
     claimedAt?: SortOrderInput | SortOrder
     payoutTxSig?: SortOrderInput | SortOrder
@@ -28536,6 +28568,7 @@ export namespace Prisma {
     OR?: PaylinkWhereInput[]
     NOT?: PaylinkWhereInput | PaylinkWhereInput[]
     orgId?: StringFilter<"Paylink"> | string
+    paylinkIdHex?: StringNullableFilter<"Paylink"> | string | null
     amount?: StringFilter<"Paylink"> | string
     currency?: StringFilter<"Paylink"> | string
     recipientWallet?: StringNullableFilter<"Paylink"> | string | null
@@ -28548,6 +28581,7 @@ export namespace Prisma {
     tokenCiphertext?: StringNullableFilter<"Paylink"> | string | null
     status?: EnumPaylinkStatusFilter<"Paylink"> | $Enums.PaylinkStatus
     expiresAt?: DateTimeFilter<"Paylink"> | Date | string
+    onChainTxSig?: StringNullableFilter<"Paylink"> | string | null
     claimedBy?: StringNullableFilter<"Paylink"> | string | null
     claimedAt?: DateTimeNullableFilter<"Paylink"> | Date | string | null
     payoutTxSig?: StringNullableFilter<"Paylink"> | string | null
@@ -28562,6 +28596,7 @@ export namespace Prisma {
   export type PaylinkOrderByWithAggregationInput = {
     id?: SortOrder
     orgId?: SortOrder
+    paylinkIdHex?: SortOrderInput | SortOrder
     amount?: SortOrder
     currency?: SortOrder
     recipientWallet?: SortOrderInput | SortOrder
@@ -28575,6 +28610,7 @@ export namespace Prisma {
     tokenCiphertext?: SortOrderInput | SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
+    onChainTxSig?: SortOrderInput | SortOrder
     claimedBy?: SortOrderInput | SortOrder
     claimedAt?: SortOrderInput | SortOrder
     payoutTxSig?: SortOrderInput | SortOrder
@@ -28593,6 +28629,7 @@ export namespace Prisma {
     NOT?: PaylinkScalarWhereWithAggregatesInput | PaylinkScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"Paylink"> | string
     orgId?: StringWithAggregatesFilter<"Paylink"> | string
+    paylinkIdHex?: StringNullableWithAggregatesFilter<"Paylink"> | string | null
     amount?: StringWithAggregatesFilter<"Paylink"> | string
     currency?: StringWithAggregatesFilter<"Paylink"> | string
     recipientWallet?: StringNullableWithAggregatesFilter<"Paylink"> | string | null
@@ -28606,6 +28643,7 @@ export namespace Prisma {
     tokenCiphertext?: StringNullableWithAggregatesFilter<"Paylink"> | string | null
     status?: EnumPaylinkStatusWithAggregatesFilter<"Paylink"> | $Enums.PaylinkStatus
     expiresAt?: DateTimeWithAggregatesFilter<"Paylink"> | Date | string
+    onChainTxSig?: StringNullableWithAggregatesFilter<"Paylink"> | string | null
     claimedBy?: StringNullableWithAggregatesFilter<"Paylink"> | string | null
     claimedAt?: DateTimeNullableWithAggregatesFilter<"Paylink"> | Date | string | null
     payoutTxSig?: StringNullableWithAggregatesFilter<"Paylink"> | string | null
@@ -30667,6 +30705,7 @@ export namespace Prisma {
 
   export type PaylinkCreateInput = {
     id?: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -30680,6 +30719,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -30694,6 +30734,7 @@ export namespace Prisma {
   export type PaylinkUncheckedCreateInput = {
     id?: string
     orgId: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -30707,6 +30748,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -30719,6 +30761,7 @@ export namespace Prisma {
 
   export type PaylinkUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30732,6 +30775,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30746,6 +30790,7 @@ export namespace Prisma {
   export type PaylinkUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30759,6 +30804,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30772,6 +30818,7 @@ export namespace Prisma {
   export type PaylinkCreateManyInput = {
     id?: string
     orgId: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -30785,6 +30832,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -30796,6 +30844,7 @@ export namespace Prisma {
 
   export type PaylinkUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30809,6 +30858,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30821,6 +30871,7 @@ export namespace Prisma {
   export type PaylinkUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -30834,6 +30885,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -33032,6 +33084,7 @@ export namespace Prisma {
   export type PaylinkCountOrderByAggregateInput = {
     id?: SortOrder
     orgId?: SortOrder
+    paylinkIdHex?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
     recipientWallet?: SortOrder
@@ -33045,6 +33098,7 @@ export namespace Prisma {
     tokenCiphertext?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
+    onChainTxSig?: SortOrder
     claimedBy?: SortOrder
     claimedAt?: SortOrder
     payoutTxSig?: SortOrder
@@ -33057,6 +33111,7 @@ export namespace Prisma {
   export type PaylinkMaxOrderByAggregateInput = {
     id?: SortOrder
     orgId?: SortOrder
+    paylinkIdHex?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
     recipientWallet?: SortOrder
@@ -33070,6 +33125,7 @@ export namespace Prisma {
     tokenCiphertext?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
+    onChainTxSig?: SortOrder
     claimedBy?: SortOrder
     claimedAt?: SortOrder
     payoutTxSig?: SortOrder
@@ -33082,6 +33138,7 @@ export namespace Prisma {
   export type PaylinkMinOrderByAggregateInput = {
     id?: SortOrder
     orgId?: SortOrder
+    paylinkIdHex?: SortOrder
     amount?: SortOrder
     currency?: SortOrder
     recipientWallet?: SortOrder
@@ -33095,6 +33152,7 @@ export namespace Prisma {
     tokenCiphertext?: SortOrder
     status?: SortOrder
     expiresAt?: SortOrder
+    onChainTxSig?: SortOrder
     claimedBy?: SortOrder
     claimedAt?: SortOrder
     payoutTxSig?: SortOrder
@@ -35617,6 +35675,7 @@ export namespace Prisma {
 
   export type PaylinkCreateWithoutOrgInput = {
     id?: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -35630,6 +35689,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -35642,6 +35702,7 @@ export namespace Prisma {
 
   export type PaylinkUncheckedCreateWithoutOrgInput = {
     id?: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -35655,6 +35716,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -35987,6 +36049,7 @@ export namespace Prisma {
     NOT?: PaylinkScalarWhereInput | PaylinkScalarWhereInput[]
     id?: StringFilter<"Paylink"> | string
     orgId?: StringFilter<"Paylink"> | string
+    paylinkIdHex?: StringNullableFilter<"Paylink"> | string | null
     amount?: StringFilter<"Paylink"> | string
     currency?: StringFilter<"Paylink"> | string
     recipientWallet?: StringNullableFilter<"Paylink"> | string | null
@@ -36000,6 +36063,7 @@ export namespace Prisma {
     tokenCiphertext?: StringNullableFilter<"Paylink"> | string | null
     status?: EnumPaylinkStatusFilter<"Paylink"> | $Enums.PaylinkStatus
     expiresAt?: DateTimeFilter<"Paylink"> | Date | string
+    onChainTxSig?: StringNullableFilter<"Paylink"> | string | null
     claimedBy?: StringNullableFilter<"Paylink"> | string | null
     claimedAt?: DateTimeNullableFilter<"Paylink"> | Date | string | null
     payoutTxSig?: StringNullableFilter<"Paylink"> | string | null
@@ -38066,6 +38130,7 @@ export namespace Prisma {
 
   export type PaylinkCreateWithoutClaimTokensInput = {
     id?: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -38079,6 +38144,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -38092,6 +38158,7 @@ export namespace Prisma {
   export type PaylinkUncheckedCreateWithoutClaimTokensInput = {
     id?: string
     orgId: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -38105,6 +38172,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -38189,6 +38257,7 @@ export namespace Prisma {
 
   export type PaylinkUpdateWithoutClaimTokensInput = {
     id?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38202,6 +38271,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38215,6 +38285,7 @@ export namespace Prisma {
   export type PaylinkUncheckedUpdateWithoutClaimTokensInput = {
     id?: StringFieldUpdateOperationsInput | string
     orgId?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38228,6 +38299,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38679,6 +38751,7 @@ export namespace Prisma {
 
   export type PaylinkCreateManyOrgInput = {
     id?: string
+    paylinkIdHex?: string | null
     amount: string
     currency?: string
     recipientWallet?: string | null
@@ -38692,6 +38765,7 @@ export namespace Prisma {
     tokenCiphertext?: string | null
     status?: $Enums.PaylinkStatus
     expiresAt: Date | string
+    onChainTxSig?: string | null
     claimedBy?: string | null
     claimedAt?: Date | string | null
     payoutTxSig?: string | null
@@ -38950,6 +39024,7 @@ export namespace Prisma {
 
   export type PaylinkUpdateWithoutOrgInput = {
     id?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38963,6 +39038,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38975,6 +39051,7 @@ export namespace Prisma {
 
   export type PaylinkUncheckedUpdateWithoutOrgInput = {
     id?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -38988,6 +39065,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39000,6 +39078,7 @@ export namespace Prisma {
 
   export type PaylinkUncheckedUpdateManyWithoutOrgInput = {
     id?: StringFieldUpdateOperationsInput | string
+    paylinkIdHex?: NullableStringFieldUpdateOperationsInput | string | null
     amount?: StringFieldUpdateOperationsInput | string
     currency?: StringFieldUpdateOperationsInput | string
     recipientWallet?: NullableStringFieldUpdateOperationsInput | string | null
@@ -39013,6 +39092,7 @@ export namespace Prisma {
     tokenCiphertext?: NullableStringFieldUpdateOperationsInput | string | null
     status?: EnumPaylinkStatusFieldUpdateOperationsInput | $Enums.PaylinkStatus
     expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    onChainTxSig?: NullableStringFieldUpdateOperationsInput | string | null
     claimedBy?: NullableStringFieldUpdateOperationsInput | string | null
     claimedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     payoutTxSig?: NullableStringFieldUpdateOperationsInput | string | null

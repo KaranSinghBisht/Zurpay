@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
+import { deriveOrgPda, derivePayrunPda, hexToBytes, ZURPAY_PROGRAM_ID } from '@zurpay/sdk';
 import { api, Paylink, Org } from '../../../../lib/api';
 import { QRCodeModal } from '../../../../components/QRCodeGenerator';
 
 export default function PaylinksPage() {
-  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const { publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58();
 
   const [org, setOrg] = useState<Org | null>(null);
@@ -18,6 +21,7 @@ export default function PaylinksPage() {
   const [resendModalPaylink, setResendModalPaylink] = useState<Paylink | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [qrModalPaylink, setQrModalPaylink] = useState<Paylink | null>(null);
+  const [postingOnChain, setPostingOnChain] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -63,6 +67,119 @@ export default function PaylinksPage() {
       loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to cancel paylink');
+    }
+  };
+
+  const handlePostOnChain = async (paylink: Paylink) => {
+    if (!org || !wallet || !publicKey || !signTransaction) return;
+    if (!paylink.paylinkIdHex || !paylink.merkleRootHex) {
+      setError('Paylink is missing required cryptographic data');
+      return;
+    }
+
+    setPostingOnChain(paylink.id);
+    setError(null);
+
+    try {
+      const orgIdBytes = hexToBytes(org.orgIdHex);
+      const paylinkIdBytes = hexToBytes(paylink.paylinkIdHex);
+      const merkleRootBytes = hexToBytes(paylink.merkleRootHex);
+
+      const orgPda = deriveOrgPda(orgIdBytes, ZURPAY_PROGRAM_ID);
+      const payrunPda = derivePayrunPda(orgIdBytes, paylinkIdBytes, ZURPAY_PROGRAM_ID);
+
+      const [orgAccountInfo, payrunAccountInfo] = await Promise.all([
+        connection.getAccountInfo(orgPda),
+        connection.getAccountInfo(payrunPda),
+      ]);
+
+      if (payrunAccountInfo) {
+        setError('This paylink has already been posted on-chain');
+        return;
+      }
+
+      const transaction = new Transaction();
+
+      if (!orgAccountInfo) {
+        const treasuryPubkey = new PublicKey(org.treasuryConfAccount);
+        const zkVerifierPubkey = new PublicKey(org.zkVerifierProgramId);
+        const incoPubkey = new PublicKey(org.incoProgramId);
+
+        const initOrgDiscriminator = Buffer.from([159, 225, 34, 170, 187, 34, 218, 4]);
+        const initOrgData = Buffer.concat([
+          initOrgDiscriminator,
+          Buffer.from(orgIdBytes),
+          Buffer.from(treasuryPubkey.toBytes()),
+          Buffer.from(zkVerifierPubkey.toBytes()),
+          Buffer.from(incoPubkey.toBytes()),
+        ]);
+
+        transaction.add(
+          new TransactionInstruction({
+            programId: ZURPAY_PROGRAM_ID,
+            keys: [
+              { pubkey: publicKey, isSigner: true, isWritable: true },
+              { pubkey: orgPda, isSigner: false, isWritable: true },
+              { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+            ],
+            data: initOrgData,
+          })
+        );
+      }
+
+      const setPayrunDiscriminator = Buffer.from([106, 77, 86, 198, 171, 28, 92, 59]);
+      const totalEmployeesBuf = Buffer.alloc(4);
+      totalEmployeesBuf.writeUInt32LE(1, 0);
+
+      const deadlineUnix = Math.floor(new Date(paylink.expiresAt).getTime() / 1000);
+      const deadlineBuf = Buffer.alloc(8);
+      deadlineBuf.writeBigInt64LE(BigInt(deadlineUnix), 0);
+
+      const setPayrunData = Buffer.concat([
+        setPayrunDiscriminator,
+        Buffer.from(paylinkIdBytes),
+        Buffer.from(merkleRootBytes),
+        totalEmployeesBuf,
+        deadlineBuf,
+      ]);
+
+      transaction.add(
+        new TransactionInstruction({
+          programId: ZURPAY_PROGRAM_ID,
+          keys: [
+            { pubkey: publicKey, isSigner: true, isWritable: true },
+            { pubkey: orgPda, isSigner: false, isWritable: true },
+            { pubkey: payrunPda, isSigner: false, isWritable: true },
+            { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          ],
+          data: setPayrunData,
+        })
+      );
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      const signedTx = await signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      });
+
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        'confirmed'
+      );
+
+      await api.paylinks.setOnChain(org.id, paylink.id, signature, wallet);
+      setSuccessMessage('Paylink posted on-chain successfully!');
+      setTimeout(() => setSuccessMessage(null), 5000);
+      loadData();
+    } catch (err) {
+      console.error('Post on-chain error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to post paylink on-chain');
+    } finally {
+      setPostingOnChain(null);
     }
   };
 
@@ -195,7 +312,21 @@ export default function PaylinksPage() {
                   </div>
                 </div>
 
-                {paylink.status === 'ACTIVE' && claimUrl && (
+                {paylink.status === 'ACTIVE' && !paylink.onChainTxSig && (
+                  <div className="p-3 bg-orange-900/20 border border-orange-700/50 rounded-lg mb-4 flex items-center justify-between">
+                    <span className="text-sm text-orange-300">
+                      Not posted on-chain. Recipients cannot claim until posted.
+                    </span>
+                    <button
+                      onClick={() => handlePostOnChain(paylink)}
+                      disabled={postingOnChain !== null}
+                      className="px-3 py-1 bg-orange-600 hover:bg-orange-700 disabled:bg-zinc-700 rounded text-sm transition-colors font-medium"
+                    >
+                      {postingOnChain === paylink.id ? 'Posting...' : 'Post On-Chain'}
+                    </button>
+                  </div>
+                )}
+                {paylink.status === 'ACTIVE' && paylink.onChainTxSig && claimUrl && (
                   <div className="flex items-center gap-2 p-3 bg-zinc-800 rounded-lg mb-4">
                     <input
                       type="text"
@@ -211,12 +342,25 @@ export default function PaylinksPage() {
                     </button>
                   </div>
                 )}
-                {paylink.status === 'ACTIVE' && !claimUrl && (
+                {paylink.status === 'ACTIVE' && paylink.onChainTxSig && !claimUrl && (
                   <div className="p-3 bg-yellow-900/20 rounded-lg mb-4 text-sm text-yellow-300">
                     Claim link unavailable. Regenerate to share a new link.
                   </div>
                 )}
 
+                {paylink.status === 'ACTIVE' && paylink.onChainTxSig && (
+                  <div className="text-xs text-zinc-500 mb-4">
+                    On-chain:{' '}
+                    <a
+                      href={`https://explorer.solana.com/tx/${paylink.onChainTxSig}?cluster=devnet`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:underline"
+                    >
+                      View Setup Tx
+                    </a>
+                  </div>
+                )}
                 {paylink.status === 'CLAIMED' && (
                   <div className="p-3 bg-blue-900/20 rounded-lg mb-4">
                     <p className="text-sm text-blue-300">
@@ -232,7 +376,7 @@ export default function PaylinksPage() {
                         rel="noopener noreferrer"
                         className="text-xs text-blue-400 hover:underline"
                       >
-                        View Transaction
+                        View Claim Transaction
                       </a>
                     )}
                   </div>

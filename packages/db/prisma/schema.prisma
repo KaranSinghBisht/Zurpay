@@ -321,8 +321,9 @@ enum PaylinkStatus {
 }
 
 model Paylink {
-  id    String @id @default(cuid())
-  orgId String
+  id           String  @id @default(cuid())
+  orgId        String
+  paylinkIdHex String? // 32 bytes hex - used as payrun_id on-chain
 
   // Amount
   amount   String
@@ -347,8 +348,9 @@ model Paylink {
   claimTokens ClaimToken[]
 
   // Status
-  status    PaylinkStatus @default(ACTIVE)
-  expiresAt DateTime
+  status       PaylinkStatus @default(ACTIVE)
+  expiresAt    DateTime
+  onChainTxSig String? // Transaction signature for set_payrun
 
   // Tracking
   claimedBy   String? // Wallet that claimed

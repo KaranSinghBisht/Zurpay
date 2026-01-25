@@ -92,12 +92,15 @@ router.get(
         select: {
           id: true,
           orgId: true,
+          paylinkIdHex: true,
+          merkleRootHex: true,
           amount: true,
           currency: true,
           recipientWallet: true,
           status: true,
           expiresAt: true,
           claimedAt: true,
+          onChainTxSig: true,
           memo: true,
           createdAt: true,
           createdBy: true,
@@ -175,10 +178,13 @@ router.post(
 
       const expiresAt = new Date(data.expiresAt);
 
+      const paylinkIdHex = bytesToHex(paylinkIdBytes);
+
       const paylink = await prisma.$transaction(async (tx) => {
         const pl = await tx.paylink.create({
           data: {
             orgId,
+            paylinkIdHex,
             amount: data.amount,
             currency: data.currency,
             recipientWallet: data.recipientWallet,
@@ -402,6 +408,57 @@ router.post(
   }
 );
 
+// Record on-chain registration (called after admin signs and submits set_payrun tx)
+router.post(
+  '/:orgId/paylinks/:paylinkId/set-on-chain',
+  requireWallet,
+  requireOrg([MemberRole.OWNER, MemberRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { txSig } = req.body;
+
+      if (!txSig) {
+        return res.status(400).json({ error: 'Transaction signature is required' });
+      }
+
+      const paylink = await prisma.paylink.findUnique({
+        where: { id: req.params.paylinkId },
+      });
+
+      if (!paylink || paylink.orgId !== req.params.orgId) {
+        return res.status(404).json({ error: 'Paylink not found' });
+      }
+
+      if (paylink.onChainTxSig) {
+        return res.status(400).json({ error: 'Paylink is already posted on-chain' });
+      }
+
+      if (!paylink.merkleRootHex || !paylink.paylinkIdHex) {
+        return res.status(400).json({ error: 'Paylink is missing required cryptographic data' });
+      }
+
+      await prisma.paylink.update({
+        where: { id: req.params.paylinkId },
+        data: { onChainTxSig: txSig },
+      });
+
+      await createAuditLog({
+        orgId: req.params.orgId,
+        actorWallet: req.wallet!,
+        action: AuditActions.CREATE_PAYLINK,
+        entityType: 'Paylink',
+        entityId: paylink.id,
+        metadata: { action: 'set_on_chain', txSig },
+      });
+
+      return res.json({ success: true, txSig });
+    } catch (error) {
+      console.error('Set paylink on-chain error:', error);
+      return res.status(500).json({ error: 'Failed to record on-chain transaction' });
+    }
+  }
+);
+
 router.get('/paylinks/:token/claim', async (req, res) => {
   try {
     const tokenHash = hashToken(req.params.token);
@@ -446,11 +503,21 @@ router.get('/paylinks/:token/claim', async (req, res) => {
       return res.status(410).json({ error: 'Paylink has expired' });
     }
 
+    if (!paylink.onChainTxSig) {
+      return res.status(400).json({
+        error: 'Paylink not yet posted on-chain. Please contact the sender.',
+        code: 'NOT_ON_CHAIN',
+      });
+    }
+
     const amountUsd = (Number(BigInt(paylink.amount)) / 1_000_000).toFixed(2);
 
     return res.json({
       id: paylink.id,
       orgName: paylink.org.name,
+      orgIdHex: paylink.org.orgIdHex,
+      paylinkIdHex: paylink.paylinkIdHex,
+      merkleRootHex: paylink.merkleRootHex,
       amountDisplay: `${amountUsd} ${paylink.currency}`,
       currency: paylink.currency,
       memo: paylink.memo,
@@ -458,6 +525,7 @@ router.get('/paylinks/:token/claim', async (req, res) => {
       salaryCommitmentHex: paylink.salaryCommitmentHex,
       ciphertextHashHex: paylink.ciphertextHashHex,
       encryptedAmountB64: paylink.encryptedAmountB64,
+      onChainTxSig: paylink.onChainTxSig,
     });
   } catch (error) {
     console.error('Get paylink claim info error:', error);

@@ -247,6 +247,7 @@ exports.Prisma.PayslipScalarFieldEnum = {
 exports.Prisma.PaylinkScalarFieldEnum = {
   id: 'id',
   orgId: 'orgId',
+  paylinkIdHex: 'paylinkIdHex',
   amount: 'amount',
   currency: 'currency',
   recipientWallet: 'recipientWallet',
@@ -260,6 +261,7 @@ exports.Prisma.PaylinkScalarFieldEnum = {
   tokenCiphertext: 'tokenCiphertext',
   status: 'status',
   expiresAt: 'expiresAt',
+  onChainTxSig: 'onChainTxSig',
   claimedBy: 'claimedBy',
   claimedAt: 'claimedAt',
   payoutTxSig: 'payoutTxSig',

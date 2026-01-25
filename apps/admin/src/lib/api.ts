@@ -230,11 +230,14 @@ export interface Payslip {
 export interface Paylink {
   id: string;
   orgId: string;
+  paylinkIdHex: string | null;
+  merkleRootHex: string | null;
   amount: string;
   currency: string;
   recipientWallet: string | null;
   status: 'ACTIVE' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED';
   expiresAt: string;
+  onChainTxSig: string | null;
   claimedBy: string | null;
   claimedAt: string | null;
   payoutTxSig: string | null;
@@ -675,6 +678,16 @@ export const api = {
         {
           method: 'POST',
           body: JSON.stringify(data),
+          wallet,
+        }
+      ),
+
+    setOnChain: (orgId: string, paylinkId: string, txSig: string, wallet: string) =>
+      fetchApi<{ success: boolean; txSig: string }>(
+        `/api/v1/orgs/${orgId}/paylinks/${paylinkId}/set-on-chain`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ txSig }),
           wallet,
         }
       ),
