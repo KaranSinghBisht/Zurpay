@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../db';
 import { AuthenticatedRequest, requireWallet, requireOrg } from '../middleware/auth';
 import { createAuditLog, AuditActions } from '../services/audit';
+import { emailService } from '../services/email';
 import { MemberRole, PaymentRequestStatus } from '../generated/prisma';
 
 const router = Router();
@@ -72,7 +73,7 @@ router.post('/:orgId/payment-requests', requireWallet, async (req: Authenticated
 
     const org = await prisma.org.findUnique({
       where: { id: orgId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, ownerWallet: true },
     });
 
     if (!org) {
@@ -113,6 +114,32 @@ router.post('/:orgId/payment-requests', requireWallet, async (req: Authenticated
       },
     });
 
+    const orgOwner = await prisma.orgMember.findFirst({
+      where: { orgId, role: MemberRole.OWNER },
+      include: { org: true },
+    });
+
+    const ownerWorker = orgOwner
+      ? await prisma.worker.findFirst({
+          where: { orgId, wallet: orgOwner.wallet },
+          select: { email: true },
+        })
+      : null;
+
+    if (ownerWorker?.email) {
+      emailService
+        .sendPaymentRequestToOrg({
+          to: ownerWorker.email,
+          orgName: org.name,
+          amount: data.amount,
+          currency: data.currency,
+          memo: data.memo,
+          requestId: paymentRequest.id,
+          requesterWallet: data.recipientWallet,
+        })
+        .catch((err) => console.error('Failed to send payment request email:', err));
+    }
+
     return res.status(201).json(paymentRequest);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -137,6 +164,7 @@ router.post(
 
       const request = await prisma.paymentRequest.findUnique({
         where: { id: req.params.requestId },
+        include: { org: { select: { name: true } } },
       });
 
       if (!request || request.orgId !== req.params.orgId) {
@@ -176,6 +204,20 @@ router.post(
         metadata: { txSignature: data.txSignature },
       });
 
+      if (request.recipientEmail) {
+        emailService
+          .sendPaymentRequestStatus({
+            to: request.recipientEmail,
+            orgName: request.org.name,
+            amount: request.amount,
+            currency: request.currency,
+            memo: request.memo || undefined,
+            status: 'approved',
+            txSignature: data.txSignature,
+          })
+          .catch((err) => console.error('Failed to send approval email:', err));
+      }
+
       return res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -201,6 +243,7 @@ router.post(
 
       const request = await prisma.paymentRequest.findUnique({
         where: { id: req.params.requestId },
+        include: { org: { select: { name: true } } },
       });
 
       if (!request || request.orgId !== req.params.orgId) {
@@ -227,6 +270,19 @@ router.post(
         metadata: { reason: data.reason },
       });
 
+      if (request.recipientEmail) {
+        emailService
+          .sendPaymentRequestStatus({
+            to: request.recipientEmail,
+            orgName: request.org.name,
+            amount: request.amount,
+            currency: request.currency,
+            memo: request.memo || undefined,
+            status: 'rejected',
+          })
+          .catch((err) => console.error('Failed to send rejection email:', err));
+      }
+
       return res.json(updated);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -234,6 +290,98 @@ router.post(
       }
       console.error('Reject payment request error:', error);
       return res.status(500).json({ error: 'Failed to reject payment request' });
+    }
+  }
+);
+
+const BatchApproveSchema = z.object({
+  requestIds: z.array(z.string()).min(1).max(50),
+});
+
+router.post(
+  '/:orgId/payment-requests/batch-approve',
+  requireWallet,
+  requireOrg([MemberRole.OWNER, MemberRole.ADMIN, MemberRole.TREASURER]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { requestIds } = BatchApproveSchema.parse(req.body);
+      const orgId = req.params.orgId;
+
+      const org = await prisma.org.findUnique({
+        where: { id: orgId },
+        select: { name: true },
+      });
+
+      if (!org) {
+        return res.status(404).json({ error: 'Organization not found' });
+      }
+
+      const requests = await prisma.paymentRequest.findMany({
+        where: {
+          id: { in: requestIds },
+          orgId,
+          status: PaymentRequestStatus.PENDING,
+        },
+      });
+
+      if (requests.length === 0) {
+        return res.status(400).json({ error: 'No valid pending requests found' });
+      }
+
+      const validIds = requests
+        .filter((r) => !r.expiresAt || new Date() <= r.expiresAt)
+        .map((r) => r.id);
+
+      if (validIds.length === 0) {
+        return res.status(400).json({ error: 'All selected requests have expired' });
+      }
+
+      await prisma.paymentRequest.updateMany({
+        where: { id: { in: validIds } },
+        data: {
+          status: PaymentRequestStatus.PAID,
+          paidBy: req.wallet,
+          paidAt: new Date(),
+        },
+      });
+
+      for (const request of requests.filter((r) => validIds.includes(r.id))) {
+        await createAuditLog({
+          orgId,
+          actorWallet: req.wallet!,
+          action: AuditActions.APPROVE_PAYMENT_REQUEST,
+          entityType: 'PaymentRequest',
+          entityId: request.id,
+          metadata: { batchApproval: true },
+        });
+
+        if (request.recipientEmail) {
+          emailService
+            .sendPaymentRequestStatus({
+              to: request.recipientEmail,
+              orgName: org.name,
+              amount: request.amount,
+              currency: request.currency,
+              memo: request.memo || undefined,
+              status: 'approved',
+            })
+            .catch((err) => console.error('Failed to send batch approval email:', err));
+        }
+      }
+
+      const expiredCount = requests.length - validIds.length;
+
+      return res.json({
+        approved: validIds.length,
+        expired: expiredCount,
+        total: requests.length,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      console.error('Batch approve error:', error);
+      return res.status(500).json({ error: 'Failed to batch approve requests' });
     }
   }
 );

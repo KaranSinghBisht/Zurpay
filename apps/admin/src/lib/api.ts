@@ -1017,5 +1017,15 @@ export const api = {
         body: JSON.stringify(data),
         wallet,
       }),
+
+    batchApprove: (orgId: string, data: { requestIds: string[] }, wallet: string) =>
+      fetchApi<{ approved: number; expired: number; total: number }>(
+        `/api/v1/orgs/${orgId}/payment-requests/batch-approve`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+          wallet,
+        }
+      ),
   },
 };

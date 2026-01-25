@@ -35,6 +35,7 @@ import payrunMultisigRouter from './routes/payrun-multisig';
 import analyticsRouter from './routes/analytics';
 import paymentRequestsRouter from './routes/payment-requests';
 import { apiRateLimit, strictRateLimit } from './middleware/rateLimit';
+import { startCleanupScheduler, stopCleanupScheduler } from './services/cleanup';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { verifyClaimTransaction } from './claim-verifier';
 
@@ -330,9 +331,13 @@ app.listen(PORT, () => {
     { port: PORT, legacyEndpoints: ENABLE_LEGACY_ENDPOINTS },
     'Payroll builder service started'
   );
+
+  const CLEANUP_INTERVAL = parseInt(process.env.CLEANUP_INTERVAL_MS || '3600000', 10);
+  startCleanupScheduler(CLEANUP_INTERVAL);
 });
 
 process.on('SIGTERM', async () => {
+  stopCleanupScheduler();
   await prisma.$disconnect();
   process.exit(0);
 });

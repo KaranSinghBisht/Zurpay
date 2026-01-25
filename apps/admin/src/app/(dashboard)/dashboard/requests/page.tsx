@@ -13,8 +13,10 @@ export default function PaymentRequestsPage() {
   const [stats, setStats] = useState<PaymentRequestStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadData();
@@ -49,6 +51,7 @@ export default function PaymentRequestsPage() {
 
       setRequests(requestList);
       setStats(statsData);
+      setSelectedIds(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load payment requests');
     } finally {
@@ -87,13 +90,58 @@ export default function PaymentRequestsPage() {
     }
   };
 
+  const handleBatchApprove = async () => {
+    if (!org || !wallet || selectedIds.size === 0) return;
+    if (!confirm(`Approve ${selectedIds.size} payment request(s)?`)) return;
+
+    try {
+      setActionLoading('batch');
+      const result = await api.paymentRequests.batchApprove(
+        org.id,
+        { requestIds: Array.from(selectedIds) },
+        wallet
+      );
+      setSuccessMessage(
+        `Approved ${result.approved} request(s)${result.expired > 0 ? `, ${result.expired} expired` : ''}`
+      );
+      setTimeout(() => setSuccessMessage(null), 5000);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to batch approve requests');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    const pendingRequests = requests.filter((r) => r.status === 'PENDING');
+    if (selectedIds.size === pendingRequests.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingRequests.map((r) => r.id)));
+    }
+  };
+
   const formatAmount = (amount: string) => {
     const num = BigInt(amount);
     const usd = Number(num) / 1_000_000;
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(usd);
   };
 
-  const formatWallet = (wallet: string) => `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+  const formatWallet = (walletAddr: string) =>
+    `${walletAddr.slice(0, 6)}...${walletAddr.slice(-4)}`;
+
+  const pendingRequests = requests.filter((r) => r.status === 'PENDING');
 
   if (!wallet) {
     return (
@@ -124,9 +172,20 @@ export default function PaymentRequestsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Payment Requests</h2>
-        <p className="text-zinc-400 text-sm">Manage incoming payment requests from contractors</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold">Payment Requests</h2>
+          <p className="text-zinc-400 text-sm">Manage incoming payment requests from contractors</p>
+        </div>
+        {selectedIds.size > 0 && (
+          <button
+            onClick={handleBatchApprove}
+            disabled={actionLoading === 'batch'}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded-lg transition-colors"
+          >
+            {actionLoading === 'batch' ? 'Processing...' : `Approve ${selectedIds.size} Selected`}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -135,6 +194,12 @@ export default function PaymentRequestsPage() {
           <button onClick={() => setError(null)} className="ml-4 text-red-400 hover:text-red-300">
             ✕
           </button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="fixed bottom-6 right-6 px-6 py-3 bg-emerald-600 text-white rounded-lg shadow-lg z-50">
+          {successMessage}
         </div>
       )}
 
@@ -177,6 +242,15 @@ export default function PaymentRequestsPage() {
           <option value="CANCELLED">Rejected</option>
           <option value="EXPIRED">Expired</option>
         </select>
+
+        {statusFilter === 'PENDING' && pendingRequests.length > 0 && (
+          <button
+            onClick={toggleSelectAll}
+            className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg hover:border-zinc-600 transition-colors"
+          >
+            {selectedIds.size === pendingRequests.length ? 'Deselect All' : 'Select All'}
+          </button>
+        )}
       </div>
 
       {requests.length === 0 ? (
@@ -208,24 +282,36 @@ export default function PaymentRequestsPage() {
           {requests.map((request) => (
             <div key={request.id} className="glass-card rounded-xl p-6">
               <div className="flex justify-between items-start mb-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl font-bold">{formatAmount(request.amount)}</span>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        request.status === 'PENDING'
-                          ? 'bg-yellow-900/50 text-yellow-300'
-                          : request.status === 'PAID'
-                            ? 'bg-emerald-900/50 text-emerald-300'
-                            : request.status === 'EXPIRED'
-                              ? 'bg-zinc-700 text-zinc-400'
-                              : 'bg-red-900/50 text-red-300'
-                      }`}
-                    >
-                      {request.status === 'CANCELLED' ? 'REJECTED' : request.status}
-                    </span>
+                <div className="flex items-start gap-4">
+                  {request.status === 'PENDING' && (
+                    <label className="flex items-center cursor-pointer mt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(request.id)}
+                        onChange={() => toggleSelection(request.id)}
+                        className="w-5 h-5 rounded text-emerald-500 bg-zinc-800 border-zinc-600"
+                      />
+                    </label>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl font-bold">{formatAmount(request.amount)}</span>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          request.status === 'PENDING'
+                            ? 'bg-yellow-900/50 text-yellow-300'
+                            : request.status === 'PAID'
+                              ? 'bg-emerald-900/50 text-emerald-300'
+                              : request.status === 'EXPIRED'
+                                ? 'bg-zinc-700 text-zinc-400'
+                                : 'bg-red-900/50 text-red-300'
+                        }`}
+                      >
+                        {request.status === 'CANCELLED' ? 'REJECTED' : request.status}
+                      </span>
+                    </div>
+                    {request.memo && <p className="text-sm text-zinc-400 mt-1">{request.memo}</p>}
                   </div>
-                  {request.memo && <p className="text-sm text-zinc-400 mt-1">{request.memo}</p>}
                 </div>
                 <div className="text-right text-sm text-zinc-500">
                   <p>Requested {new Date(request.createdAt).toLocaleDateString()}</p>
