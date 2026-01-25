@@ -113,7 +113,7 @@ export function OnboardingWizard() {
         Math.floor(Math.random() * 16).toString(16)
       ).join('');
 
-      const zkVerifierProgramId = 'HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS';
+      const zkVerifierProgramId = 'DgwK4ZudX5Nf48Fqw72j1J7wijojhxomPJe5gtMgkKAT';
       const incoProgramId = '5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj';
 
       const treasuryPda = deriveTreasuryPda(hexToBytes(orgIdHex));
@@ -149,7 +149,7 @@ export function OnboardingWizard() {
       const orgPda = deriveOrgPda(orgId);
       const treasuryPda = deriveTreasuryPda(orgId);
 
-      const zkVerifierProgramId = new PublicKey('HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS');
+      const zkVerifierProgramId = new PublicKey('DgwK4ZudX5Nf48Fqw72j1J7wijojhxomPJe5gtMgkKAT');
       const incoProgramId = INCO_PROGRAM_ID;
 
       const discriminator = Buffer.from([0x9f, 0xe1, 0x22, 0xaa, 0xbb, 0x22, 0xda, 0x04]);

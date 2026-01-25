@@ -5,9 +5,8 @@ import { prisma } from '@/lib/db';
 import { createHash, createDecipheriv } from 'crypto';
 import { PublicKey } from '@solana/web3.js';
 import { execSync } from 'child_process';
-import { writeFileSync, readFileSync, mkdirSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
 
 const ENCRYPTION_KEY = process.env.PAYROLL_ENCRYPTION_KEY || 'change-me-please-use-32-chars-or';
 
@@ -128,11 +127,42 @@ export async function POST(
     const employeeConfAccount = new PublicKey(employeeConfAccountAddress);
     const payoutPubkeyHash = sha256(employeeConfAccount.toBytes());
 
+    if (!payrun.merkleRootHex) {
+      return NextResponse.json({ error: 'Payrun merkleRootHex is missing' }, { status: 500 });
+    }
+    if (!claimToken.salaryCommitmentHex) {
+      return NextResponse.json(
+        { error: 'ClaimToken salaryCommitmentHex is missing' },
+        { status: 500 }
+      );
+    }
+    if (!claimToken.ciphertextHashHex) {
+      return NextResponse.json(
+        { error: 'ClaimToken ciphertextHashHex is missing' },
+        { status: 500 }
+      );
+    }
+    if (!claimToken.encryptedAmountB64) {
+      return NextResponse.json(
+        { error: 'ClaimToken encryptedAmountB64 is missing' },
+        { status: 500 }
+      );
+    }
+
     const orgId = hexToBytes(org.orgIdHex);
     const payrunId = hexToBytes(payrun.payrunIdHex);
-    const merkleRoot = hexToBytes(payrun.merkleRootHex!);
-    const salaryCommitment = hexToBytes(claimToken.salaryCommitmentHex!);
-    const ciphertextHash = hexToBytes(claimToken.ciphertextHashHex!);
+    const merkleRoot = hexToBytes(payrun.merkleRootHex);
+    const salaryCommitment = hexToBytes(claimToken.salaryCommitmentHex);
+    const ciphertextHash = hexToBytes(claimToken.ciphertextHashHex);
+
+    console.log('=== PROOF GENERATION DEBUG ===');
+    console.log('orgIdHex:', org.orgIdHex);
+    console.log('payrunIdHex:', payrun.payrunIdHex);
+    console.log('merkleRootHex:', payrun.merkleRootHex);
+    console.log('salaryCommitmentHex:', claimToken.salaryCommitmentHex);
+    console.log('ciphertextHashHex:', claimToken.ciphertextHashHex);
+    console.log('employeeConfAccountAddress:', employeeConfAccountAddress);
+    console.log('payoutPubkeyHashHex:', bytesToHex(payoutPubkeyHash));
 
     const domainSepInput = new Uint8Array(64);
     domainSepInput.set(orgId, 0);
@@ -143,6 +173,8 @@ export async function POST(
     nullifierInput.set(domainSep, 0);
     nullifierInput.set(employeeSecret, 32);
     const nullifier = sha256(nullifierInput);
+
+    console.log('nullifierHex:', bytesToHex(nullifier));
 
     const useMockProver = process.env.USE_MOCK_PROVER === 'true';
 
@@ -173,13 +205,24 @@ export async function POST(
       proofB64 = Buffer.alloc(192).toString('base64');
     } else {
       const circuitDir = join(process.cwd(), '..', '..', 'circuits', 'claim_eligibility');
-      const tempDir = join(tmpdir(), `zurpay-proof-${Date.now()}`);
 
-      if (!existsSync(tempDir)) {
-        mkdirSync(tempDir, { recursive: true });
+      const publicInputsPreimage = new Uint8Array(160);
+      publicInputsPreimage.set(merkleRoot, 0);
+      publicInputsPreimage.set(nullifier, 32);
+      publicInputsPreimage.set(payoutPubkeyHash, 64);
+      publicInputsPreimage.set(orgId, 96);
+      publicInputsPreimage.set(salaryCommitment, 128);
+      const publicInputsHashBytes = sha256(publicInputsPreimage);
+
+      let publicInputsHashField = BigInt(0);
+      for (let i = 1; i < 32; i++) {
+        publicInputsHashField =
+          publicInputsHashField * BigInt(256) + BigInt(publicInputsHashBytes[i]);
       }
+      const publicInputsHashHex = '0x' + publicInputsHashField.toString(16);
 
       const proverToml = `
+public_inputs_hash = "${publicInputsHashHex}"
 merkle_root = [${Array.from(merkleRoot).join(', ')}]
 nullifier = [${Array.from(nullifier).join(', ')}]
 payout_pubkey_hash = [${Array.from(payoutPubkeyHash).join(', ')}]
@@ -190,33 +233,64 @@ employee_secret = [${Array.from(employeeSecret).join(', ')}]
 payrun_id = [${Array.from(payrunId).join(', ')}]
 merkle_path = [${merklePath.map((p) => `[${Array.from(hexToBytes(p)).join(', ')}]`).join(', ')}]
 path_indices = [${pathIndices.map((i) => (i ? 'true' : 'false')).join(', ')}]
-
-[public_inputs]
-public_inputs_hash = "0x0"
 `;
 
-      const proverTomlPath = join(tempDir, 'Prover.toml');
+      const proverTomlPath = join(circuitDir, 'Prover.toml');
       writeFileSync(proverTomlPath, proverToml);
 
       try {
-        execSync(`cd ${circuitDir} && nargo prove --prover-toml ${proverTomlPath}`, {
+        const sunspotBin = process.env.SUNSPOT_BIN || 'sunspot';
+        const witnessName = `witness_${Date.now()}`;
+        const witnessPath = join(circuitDir, 'target', `${witnessName}.gz`);
+
+        execSync(`cd ${circuitDir} && nargo execute --prover-name Prover ${witnessName}`, {
           timeout: 120000,
+          stdio: 'pipe',
         });
 
-        const sunspotBin = process.env.SUNSPOT_BIN || 'sunspot';
+        // sunspot prove outputs to {ccs_basename}.proof and {ccs_basename}.pw
+        const targetDir = join(circuitDir, 'target');
+        const proofOutputPath = join(targetDir, 'claim_eligibility.proof');
+        const publicOutputPath = join(targetDir, 'claim_eligibility.pw');
+
         execSync(
-          `${sunspotBin} prove ${circuitDir}/target/claim_eligibility.json ${proverTomlPath} ${tempDir}/proof.bin ${tempDir}/public.pw`,
-          { timeout: 120000 }
+          `${sunspotBin} prove ${targetDir}/claim_eligibility.json ${witnessPath} ${targetDir}/claim_eligibility.ccs ${targetDir}/claim_eligibility.pk`,
+          { timeout: 300000, stdio: 'pipe' }
         );
 
-        const proofBytes = readFileSync(join(tempDir, 'proof.bin'));
-        const publicInputsBytes = readFileSync(join(tempDir, 'public.pw'));
+        const proofBytes = readFileSync(proofOutputPath);
+        const publicInputsBytes = readFileSync(publicOutputPath);
+
+        // Sunspot outputs Big Endian headers, but the on-chain verifier expects Little Endian
+        // Convert the 12-byte header from BE to LE (3 x 4-byte u32 values)
+        const fixedPublicInputs = Buffer.from(publicInputsBytes);
+        for (let i = 0; i < 12; i += 4) {
+          // Swap bytes: [0,1,2,3] -> [3,2,1,0]
+          const b0 = fixedPublicInputs[i];
+          const b1 = fixedPublicInputs[i + 1];
+          const b2 = fixedPublicInputs[i + 2];
+          const b3 = fixedPublicInputs[i + 3];
+          fixedPublicInputs[i] = b3;
+          fixedPublicInputs[i + 1] = b2;
+          fixedPublicInputs[i + 2] = b1;
+          fixedPublicInputs[i + 3] = b0;
+        }
+
+        console.log('=== ENDIANNESS FIX ===');
+        console.log('Original header (BE):', publicInputsBytes.slice(0, 12).toString('hex'));
+        console.log('Fixed header (LE):', fixedPublicInputs.slice(0, 12).toString('hex'));
 
         proofB64 = proofBytes.toString('base64');
-        publicInputsB64 = publicInputsBytes.toString('base64');
+        publicInputsB64 = fixedPublicInputs.toString('base64');
       } catch (proverError) {
         console.error('Prover error:', proverError);
-        return NextResponse.json({ error: 'Proof generation failed' }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: 'Proof generation failed.',
+            details: proverError instanceof Error ? proverError.message : 'Unknown error',
+          },
+          { status: 500 }
+        );
       }
     }
 
@@ -240,6 +314,7 @@ public_inputs_hash = "0x0"
     return NextResponse.json(claimPackage);
   } catch (error) {
     console.error('Generate proof error:', error);
-    return NextResponse.json({ error: 'Failed to generate proof' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: `Failed to generate proof: ${message}` }, { status: 500 });
   }
 }

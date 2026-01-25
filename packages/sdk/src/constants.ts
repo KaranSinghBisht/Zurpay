@@ -34,7 +34,7 @@ export const DEFAULT_INCO_PROGRAM_ID = new PublicKey(
 );
 
 export const DEFAULT_ZK_VERIFIER_PROGRAM_ID = new PublicKey(
-  getEnvOrDefault('ZK_VERIFIER_PROGRAM_ID', 'HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS')
+  getEnvOrDefault('ZK_VERIFIER_PROGRAM_ID', 'DgwK4ZudX5Nf48Fqw72j1J7wijojhxomPJe5gtMgkKAT')
 );
 
 export const MERKLE_TREE_DEPTH = 20;

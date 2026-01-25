@@ -162,6 +162,17 @@ export function buildClaimInstruction(
     return buf;
   };
 
+  console.log('=== SDK BUILD CLAIM INSTRUCTION ===');
+  console.log('nullifierHash:', Buffer.from(nullifierHash).toString('hex'));
+  console.log('payoutPubkeyHash:', Buffer.from(payoutPubkeyHash).toString('hex'));
+  console.log('salaryCommitment:', Buffer.from(salaryCommitment).toString('hex'));
+  console.log('ciphertextHash:', Buffer.from(ciphertextHash).toString('hex'));
+  console.log('proofBytes.length:', proofBytes.length);
+  console.log('publicInputsBytes.length:', publicInputsBytes.length);
+  console.log('publicInputsBytes (hex):', Buffer.from(publicInputsBytes).toString('hex'));
+  console.log('encryptedAmount.length:', encryptedAmount.length);
+  console.log('schemaVersion:', schemaVersion);
+
   const data = Buffer.concat([
     discriminator,
     Buffer.from(nullifierHash),
@@ -276,48 +287,66 @@ export async function submitClaimFromPackage(
   });
 
   const transaction = new Transaction().add(computeBudgetIx).add(instruction);
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = wallet.publicKey;
 
-  try {
-    transaction.compileMessage();
-  } catch (compileError) {
-    console.error('Transaction compile error:', compileError);
-    console.error(
-      'Instruction keys:',
-      instruction.keys.map((k, i) => ({
-        index: i,
-        pubkey: k.pubkey.toBase58(),
-        isSigner: k.isSigner,
-        isWritable: k.isWritable,
-      }))
-    );
-    console.error('Instruction data length:', instruction.data.length);
-    throw new Error(
-      `Transaction compilation failed: ${compileError instanceof Error ? compileError.message : String(compileError)}`
-    );
-  }
+  const sendWithRetry = async (maxRetries = 3): Promise<string> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = wallet.publicKey;
 
-  const signedTx = await wallet.signTransaction(transaction);
+      try {
+        transaction.compileMessage();
+      } catch (compileError) {
+        console.error('Transaction compile error:', compileError);
+        console.error(
+          'Instruction keys:',
+          instruction.keys.map((k, i) => ({
+            index: i,
+            pubkey: k.pubkey.toBase58(),
+            isSigner: k.isSigner,
+            isWritable: k.isWritable,
+          }))
+        );
+        console.error('Instruction data length:', instruction.data.length);
+        throw new Error(
+          `Transaction compilation failed: ${compileError instanceof Error ? compileError.message : String(compileError)}`
+        );
+      }
 
-  // Submit transaction
-  const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-    skipPreflight: false,
-    preflightCommitment: 'confirmed',
-  });
+      const signedTx = await wallet.signTransaction(transaction);
 
-  // Wait for confirmation
-  await connection.confirmTransaction(
-    {
-      signature,
-      blockhash,
-      lastValidBlockHeight,
-    },
-    'confirmed'
-  );
+      try {
+        const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        });
 
-  return signature;
+        await connection.confirmTransaction(
+          {
+            signature,
+            blockhash,
+            lastValidBlockHeight,
+          },
+          'confirmed'
+        );
+
+        return signature;
+      } catch (sendError) {
+        const errorMsg = sendError instanceof Error ? sendError.message : String(sendError);
+        const isBlockhashError =
+          errorMsg.includes('Blockhash not found') || errorMsg.includes('block height exceeded');
+
+        if (isBlockhashError && attempt < maxRetries) {
+          console.warn(`Blockhash expired, retrying (attempt ${attempt + 1}/${maxRetries})...`);
+          continue;
+        }
+        throw sendError;
+      }
+    }
+    throw new Error('Max retries exceeded');
+  };
+
+  return sendWithRetry();
 }
 
 export function deriveClaimPdas(

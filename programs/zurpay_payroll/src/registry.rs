@@ -14,7 +14,10 @@ pub fn is_approved_inco(_program_id: &Pubkey) -> bool {
 /// Production/devnet mode: validate against whitelist
 #[cfg(all(feature = "devnet", not(feature = "testing")))]
 pub mod approved_programs {
-    pub const ZK_VERIFIER_PROGRAMS: &[&str] = &["HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS"];
+    pub const ZK_VERIFIER_PROGRAMS: &[&str] = &[
+        "HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS",
+        "DgwK4ZudX5Nf48Fqw72j1J7wijojhxomPJe5gtMgkKAT",
+    ];
 
     pub const INCO_PROGRAMS: &[&str] = &[
         "IncoDEV1111111111111111111111111111111111",

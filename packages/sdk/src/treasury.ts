@@ -232,17 +232,41 @@ export async function initEmployeeConf(
   );
 
   const transaction = new Transaction().add(instruction);
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = wallet.publicKey;
 
-  const signedTx = await wallet.signTransaction(transaction);
-  const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-    skipPreflight: false,
-    preflightCommitment: 'confirmed',
-  });
+  const sendWithRetry = async (maxRetries = 3): Promise<string> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = wallet.publicKey;
 
-  await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+      const signedTx = await wallet.signTransaction(transaction);
 
-  return signature;
+      try {
+        const signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        });
+
+        await connection.confirmTransaction(
+          { signature, blockhash, lastValidBlockHeight },
+          'confirmed'
+        );
+
+        return signature;
+      } catch (sendError) {
+        const errorMsg = sendError instanceof Error ? sendError.message : String(sendError);
+        const isBlockhashError =
+          errorMsg.includes('Blockhash not found') || errorMsg.includes('block height exceeded');
+
+        if (isBlockhashError && attempt < maxRetries) {
+          console.warn(`Blockhash expired, retrying (attempt ${attempt + 1}/${maxRetries})...`);
+          continue;
+        }
+        throw sendError;
+      }
+    }
+    throw new Error('Max retries exceeded');
+  };
+
+  return sendWithRetry();
 }

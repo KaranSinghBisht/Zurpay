@@ -291,7 +291,7 @@ export default function TreasuryPage() {
       const orgAccount = deriveOrgPda(orgId);
       const treasury = deriveTreasuryPda(orgId);
 
-      const zkVerifierProgramId = new PublicKey('HbBb7nk8MPexLpcHXP2sPLVdVm2TmXaqneHkQ1pnQSMS');
+      const zkVerifierProgramId = new PublicKey('DgwK4ZudX5Nf48Fqw72j1J7wijojhxomPJe5gtMgkKAT');
 
       const discriminator = Buffer.from([0x9f, 0xe1, 0x22, 0xaa, 0xbb, 0x22, 0xda, 0x04]);
 
