@@ -126,12 +126,18 @@ function TreasuryCard({ treasuryAccount }: { treasuryAccount: string }) {
         <div className="text-xs text-zinc-500">
           {accountExists === false && (
             <span className="text-yellow-400">
-              Treasury account not initialized. Fund it to enable claims.
+              Treasury account not initialized.{' '}
+              <a href="/dashboard/treasury" className="underline hover:text-yellow-300">
+                Go to Treasury →
+              </a>
             </span>
           )}
           {accountExists === true && (
             <span className="text-emerald-400">
-              Confidential balance is encrypted and only visible to account owner.
+              Confidential balance is encrypted.{' '}
+              <a href="/dashboard/treasury" className="underline hover:text-emerald-300">
+                Manage Treasury →
+              </a>
             </span>
           )}
         </div>
