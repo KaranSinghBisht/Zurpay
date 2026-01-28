@@ -170,7 +170,7 @@ export class TokenStore {
     return {
       exists: true,
       used: claimToken.usedAt ? true : false,
-      expired: claimToken.expiresAt < new Date(),
+      expired: claimToken.expiresAt ? claimToken.expiresAt < new Date() : false,
     };
   }
 

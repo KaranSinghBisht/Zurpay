@@ -11,6 +11,7 @@ const CreatePaymentRequestSchema = z.object({
   currency: z.string().default('USDC'),
   memo: z.string().max(500).optional(),
   expiresAt: z.string().datetime().optional(),
+  orgId: z.string().optional(), // Optional org association
   signature: z.string(),
   message: z.string(),
 });
@@ -35,8 +36,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = CreatePaymentRequestSchema.parse(body);
 
-    const expectedMessage = `Create Zurpay payment request for ${data.amount} ${data.currency}`;
-    if (data.message !== expectedMessage) {
+    // Support both formats: with currency param or hardcoded USDC
+    const expectedMessage1 = `Create Zurpay payment request for ${data.amount} ${data.currency}`;
+    const expectedMessage2 = `Create Zurpay payment request for ${data.amount} USDC`;
+    if (data.message !== expectedMessage1 && data.message !== expectedMessage2) {
       return NextResponse.json({ error: 'Invalid message format' }, { status: 400 });
     }
 
@@ -54,6 +57,7 @@ export async function POST(request: NextRequest) {
         currency: data.currency,
         memo: data.memo,
         expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+        orgId: data.orgId, // Optional org association for P2P requests
       },
     });
 

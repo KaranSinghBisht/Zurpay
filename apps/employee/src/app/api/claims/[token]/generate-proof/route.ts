@@ -220,6 +220,7 @@ salary_commitment = [${Array.from(salaryCommitment).join(', ')}]
 ciphertext_hash = [${Array.from(ciphertextHash).join(', ')}]
 employee_secret = [${Array.from(employeeSecret).join(', ')}]
 payrun_id = [${Array.from(payrunId).join(', ')}]
+payout_pubkey = [${Array.from(employeeConfAccount.toBytes()).join(', ')}]
 merkle_path = [${merklePath.map((p) => `[${Array.from(hexToBytes(p)).join(', ')}]`).join(', ')}]
 path_indices = [${pathIndices.map((i) => (i ? 'true' : 'false')).join(', ')}]
 `;

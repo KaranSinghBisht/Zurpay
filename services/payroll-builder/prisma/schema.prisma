@@ -713,8 +713,8 @@ model PaymentRequest {
   currency String @default("USDC")
   memo     String? // "Hackathon prize", "Freelance work", etc.
 
-  // Org link (for contractor → org requests)
-  orgId String
+  // Org link (optional for standalone P2P requests)
+  orgId String?
 
   // Status
   status PaymentRequestStatus @default(PENDING)
@@ -736,8 +736,8 @@ model PaymentRequest {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  // Relations
-  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  // Relations (optional for standalone P2P requests)
+  org Org? @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@index([recipientWallet])
   @@index([status])
