@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useRouter } from 'next/navigation';
 import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { api, Org, OrgStats } from '../../../lib/api';
 import dynamic from 'next/dynamic';
@@ -149,16 +150,25 @@ function TreasuryCard({ treasuryAccount }: { treasuryAccount: string }) {
 
 export default function DashboardPage() {
   const { publicKey } = useWallet();
+  const router = useRouter();
   const wallet = publicKey?.toBase58();
 
   const [org, setOrg] = useState<Org | null>(null);
   const [stats, setStats] = useState<OrgStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noOrg, setNoOrg] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [wallet]);
+
+  // Redirect to onboarding if wallet connected but no org
+  useEffect(() => {
+    if (noOrg && wallet) {
+      router.push('/onboarding');
+    }
+  }, [noOrg, wallet, router]);
 
   const loadData = async () => {
     if (!wallet) {
@@ -173,12 +183,14 @@ export default function DashboardPage() {
       const orgs = await api.orgs.list(wallet);
 
       if (orgs.length === 0) {
+        setNoOrg(true);
         setOrg(null);
         setStats(null);
         setLoading(false);
         return;
       }
 
+      setNoOrg(false);
       const selectedOrg = orgs[0];
       setOrg(selectedOrg);
 
@@ -251,31 +263,11 @@ export default function DashboardPage() {
   }
 
   if (!org) {
+    // Will auto-redirect to onboarding via useEffect
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
-        <div className="mt-12 text-center py-16 glass-card rounded-xl">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
-            <svg
-              className="w-8 h-8 text-zinc-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">No Organization Found</h3>
-          <p className="text-zinc-400 mb-6">Initialize your organization to get started</p>
-          <a href="/dashboard/settings" className="btn-primary">
-            Initialize Organization
-          </a>
-        </div>
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-zinc-400">Redirecting to setup...</p>
       </div>
     );
   }
