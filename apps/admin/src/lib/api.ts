@@ -406,6 +406,33 @@ export interface PaymentRequestStats {
   pendingAmount: string;
 }
 
+export interface PrivacyCashStatus {
+  enabled: boolean;
+  walletAddress: string | null;
+  shieldedBalanceUSDC: number | null;
+  shieldedBalanceSOL: number | null;
+  error: string | null;
+  feeInfo: {
+    depositFee: string;
+    withdrawalFee: string;
+    example: {
+      percentageFee: number;
+      estimatedTotalFee: number;
+    };
+  };
+}
+
+export interface PrivateFundResult {
+  success: boolean;
+  message: string;
+  depositTxSignature: string | null;
+  withdrawTxSignature: string;
+  amountRequested: number;
+  amountReceived: number;
+  feePaid: number;
+  privacyNote: string;
+}
+
 export const api = {
   orgs: {
     list: (wallet: string) => fetchApi<Org[]>('/api/v1/orgs', { wallet }),
@@ -1040,5 +1067,58 @@ export const api = {
           wallet,
         }
       ),
+  },
+
+  treasury: {
+    getPrivacyCashStatus: (orgId: string, wallet: string) =>
+      fetchApi<PrivacyCashStatus>(`/api/v1/orgs/${orgId}/treasury/privacy-cash/status`, { wallet }),
+
+    fundPrivately: (
+      orgId: string,
+      data: { amountUSDC: number; treasuryAddress: string },
+      wallet: string
+    ) =>
+      fetchApi<PrivateFundResult>(`/api/v1/orgs/${orgId}/treasury/privacy-cash/fund`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        wallet,
+      }),
+
+    depositToPool: (orgId: string, data: { amountUSDC: number }, wallet: string) =>
+      fetchApi<{ success: boolean; txSignature: string; amountUSDC: number }>(
+        `/api/v1/orgs/${orgId}/treasury/privacy-cash/deposit`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+          wallet,
+        }
+      ),
+
+    withdrawFromPool: (
+      orgId: string,
+      data: { amountUSDC: number; recipientAddress: string },
+      wallet: string
+    ) =>
+      fetchApi<{
+        success: boolean;
+        txSignature: string;
+        recipient: string;
+        amountRequested: number;
+        amountReceived: number;
+        feePaid: number;
+      }>(`/api/v1/orgs/${orgId}/treasury/privacy-cash/withdraw`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        wallet,
+      }),
+
+    getFeeEstimate: (orgId: string, amount: number, wallet: string) =>
+      fetchApi<{
+        amountUSDC: number;
+        percentageFee: number;
+        estimatedTotalFee: number;
+        amountAfterFee: number;
+        note: string;
+      }>(`/api/v1/orgs/${orgId}/treasury/privacy-cash/fee-estimate?amount=${amount}`, { wallet }),
   },
 };
