@@ -1,6 +1,9 @@
+'use client';
+
 import { LaptopMockup } from '../../components/LaptopMockup';
 import { FeaturesGrid } from '../../components/FeaturesGrid';
 import { HowItWorks } from '../../components/HowItWorks';
+import { SmartLaunchButton } from '../../components/SmartLaunchButton';
 
 export default function LandingPage() {
   return (
@@ -28,9 +31,9 @@ export default function LandingPage() {
               GitHub
             </a>
           </div>
-          <a href="/onboarding" className="btn-primary">
+          <SmartLaunchButton className="btn-primary">
             Launch App →
-          </a>
+          </SmartLaunchButton>
         </div>
       </nav>
 
@@ -55,9 +58,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 mb-16 animate-fade-in-up delay-300">
-            <a href="/onboarding" className="btn-primary text-lg px-8 py-4">
+            <SmartLaunchButton className="btn-primary text-lg px-8 py-4">
               Launch App →
-            </a>
+            </SmartLaunchButton>
             <a href="#how-it-works" className="btn-secondary text-lg px-8 py-4">
               Learn More
             </a>
@@ -183,9 +186,9 @@ export default function LandingPage() {
               <p className="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">
                 Join the future of confidential compensation. Your employees deserve privacy.
               </p>
-              <a href="/onboarding" className="btn-primary text-lg px-8 py-4">
+              <SmartLaunchButton className="btn-primary text-lg px-8 py-4">
                 Launch App →
-              </a>
+              </SmartLaunchButton>
             </div>
           </div>
         </div>
