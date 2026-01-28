@@ -149,6 +149,14 @@ export function OnboardingWizard() {
       const orgPda = deriveOrgPda(orgId);
       const treasuryPda = deriveTreasuryPda(orgId);
 
+      // Check if org already exists on-chain
+      const orgAccountInfo = await connection.getAccountInfo(orgPda);
+      if (orgAccountInfo) {
+        console.log('Org already exists on-chain, skipping to treasury init...');
+        setStep('init-treasury');
+        return;
+      }
+
       const zkVerifierProgramId = new PublicKey('DgwK4ZudX5Nf48Fqw72j1J7wijojhxomPJe5gtMgkKAT');
       const incoProgramId = INCO_PROGRAM_ID;
 
@@ -207,6 +215,14 @@ export function OnboardingWizard() {
       const orgId = hexToBytes(state.orgIdHex);
       const orgPda = deriveOrgPda(orgId);
       const treasuryPda = deriveTreasuryPda(orgId);
+
+      // Check if treasury already exists on-chain
+      const treasuryAccountInfo = await connection.getAccountInfo(treasuryPda);
+      if (treasuryAccountInfo) {
+        console.log('Treasury already exists on-chain, skipping to complete...');
+        setStep('complete');
+        return;
+      }
 
       const discriminator = Buffer.from([0x69, 0x98, 0xad, 0x33, 0x9e, 0x97, 0x31, 0x0e]);
 
