@@ -149,8 +149,8 @@ export function OnboardingWizard() {
       const orgPda = deriveOrgPda(orgId);
       const treasuryPda = deriveTreasuryPda(orgId);
 
-      // Check if org already exists on-chain
-      const orgAccountInfo = await connection.getAccountInfo(orgPda);
+      // Check if org already exists on-chain (use confirmed commitment)
+      const orgAccountInfo = await connection.getAccountInfo(orgPda, 'confirmed');
       if (orgAccountInfo) {
         console.log('Org already exists on-chain, skipping to treasury init...');
         setStep('init-treasury');
@@ -187,8 +187,8 @@ export function OnboardingWizard() {
 
       const signedTx = await signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
+        skipPreflight: true, // Skip simulation to avoid stale cache issues
+        maxRetries: 3,
       });
 
       await connection.confirmTransaction(
@@ -197,8 +197,24 @@ export function OnboardingWizard() {
       );
 
       setStep('init-treasury');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Init org on-chain error:', err);
+
+      // Handle "already processed" - likely means org was created successfully
+      if (err?.message?.includes('already been processed') || err?.message?.includes('AlreadyProcessed')) {
+        console.log('Transaction already processed, checking if org exists...');
+        // Wait a moment for chain state to propagate
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const orgId = hexToBytes(state.orgIdHex!);
+        const orgPda = deriveOrgPda(orgId);
+        const orgCheck = await connection.getAccountInfo(orgPda, 'confirmed');
+        if (orgCheck) {
+          console.log('Org exists on-chain, proceeding...');
+          setStep('init-treasury');
+          return;
+        }
+      }
+
       setError(err instanceof Error ? err.message : 'Failed to initialize organization on-chain');
     } finally {
       setLoading(false);
@@ -216,11 +232,11 @@ export function OnboardingWizard() {
       const orgPda = deriveOrgPda(orgId);
       const treasuryPda = deriveTreasuryPda(orgId);
 
-      // Check if treasury already exists on-chain
-      const treasuryAccountInfo = await connection.getAccountInfo(treasuryPda);
+      // Check if treasury already exists on-chain (use confirmed commitment)
+      const treasuryAccountInfo = await connection.getAccountInfo(treasuryPda, 'confirmed');
       if (treasuryAccountInfo) {
-        console.log('Treasury already exists on-chain, skipping to complete...');
-        setStep('complete');
+        console.log('Treasury already exists on-chain, skipping to add-worker...');
+        setStep('add-worker');
         return;
       }
 
@@ -245,8 +261,8 @@ export function OnboardingWizard() {
 
       const signedTx = await signTransaction(transaction);
       const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
+        skipPreflight: true, // Skip simulation to avoid stale cache issues
+        maxRetries: 3,
       });
 
       await connection.confirmTransaction(
@@ -255,8 +271,23 @@ export function OnboardingWizard() {
       );
 
       setStep('add-worker');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Treasury init error:', err);
+
+      // Handle "already processed" - likely means treasury was created successfully
+      if (err?.message?.includes('already been processed') || err?.message?.includes('AlreadyProcessed')) {
+        console.log('Transaction already processed, checking if treasury exists...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        const orgId = hexToBytes(state.orgIdHex!);
+        const treasuryPda = deriveTreasuryPda(orgId);
+        const treasuryCheck = await connection.getAccountInfo(treasuryPda, 'confirmed');
+        if (treasuryCheck) {
+          console.log('Treasury exists on-chain, proceeding...');
+          setStep('add-worker');
+          return;
+        }
+      }
+
       setError(err instanceof Error ? err.message : 'Failed to initialize treasury');
     } finally {
       setLoading(false);
