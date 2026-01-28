@@ -131,6 +131,12 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
       return;
     }
 
+    // Prevent double-click while processing
+    if (status === 'generating-proof' || status === 'claiming') {
+      console.log('Claim already in progress, ignoring...');
+      return;
+    }
+
     try {
       setStatus('generating-proof');
       setError('');
@@ -216,7 +222,14 @@ export default function ClaimDetailPage({ params }: { params: { payrunId: string
       setStatus('success');
     } catch (err) {
       console.error('Claim failed:', err);
-      setError(err instanceof Error ? err.message : 'Claim failed');
+      const errorMessage = err instanceof Error ? err.message : 'Claim failed';
+
+      // Handle duplicate transaction error gracefully
+      if (errorMessage.includes('already been processed') || errorMessage.includes('AlreadyProcessed')) {
+        setError('This claim may have already been processed. Please check your wallet balance or wait a moment and refresh.');
+      } else {
+        setError(errorMessage);
+      }
       setStatus('error');
     }
   };

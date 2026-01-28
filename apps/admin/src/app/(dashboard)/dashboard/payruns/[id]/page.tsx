@@ -423,6 +423,12 @@ export default function PayrunDetailPage() {
   const postPayrunToChain = async (payrunData: Payrun & { payslips: Payslip[] }) => {
     if (!org || !wallet || !publicKey || !signTransaction) return;
 
+    // Check if already posted (DB state)
+    if (payrunData.onChainTxSig) {
+      console.log('Payrun already posted on-chain, skipping...');
+      return;
+    }
+
     if (!payrunData.merkleRootHex) {
       throw new Error('Merkle root not generated');
     }
