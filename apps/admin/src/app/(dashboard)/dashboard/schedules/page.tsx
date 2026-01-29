@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { api, Org, RecurringSchedule, Worker } from '../../../../lib/api';
 
@@ -24,7 +25,16 @@ const frequencyLabels: Record<string, string> = {
 
 const dayOfWeekLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+interface CreatedPayrunInfo {
+  payrunId: string;
+  payrunIdHex: string;
+  scheduleName: string;
+  totalPayslips: number;
+  totalAmount: string;
+}
+
 export default function SchedulesPage() {
+  const router = useRouter();
   const { publicKey } = useWallet();
   const wallet = publicKey?.toBase58();
 
@@ -36,6 +46,7 @@ export default function SchedulesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [createdPayrun, setCreatedPayrun] = useState<CreatedPayrunInfo | null>(null);
 
   useEffect(() => {
     loadData();
@@ -74,7 +85,7 @@ export default function SchedulesPage() {
     }
   };
 
-  const handleRunNow = async (scheduleId: string) => {
+  const handleRunNow = async (scheduleId: string, scheduleName: string) => {
     if (!org || !wallet) return;
     if (!confirm('This will create a new payrun based on this schedule. Continue?')) return;
 
@@ -83,14 +94,35 @@ export default function SchedulesPage() {
 
     try {
       const result = await api.schedules.runNow(org.id, scheduleId, wallet);
-      setSuccessMessage(`Payrun created! ID: ${result.payrun.payrunIdHex.slice(0, 12)}...`);
-      setTimeout(() => setSuccessMessage(null), 5000);
+
+      // Show the success modal with payrun info
+      setCreatedPayrun({
+        payrunId: result.payrun.id,
+        payrunIdHex: result.payrun.payrunIdHex,
+        scheduleName: scheduleName,
+        totalPayslips: result.payrun.totalPayslips,
+        totalAmount: result.payrun.totalAmount || '0',
+      });
+
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run schedule');
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleGoToPayrun = () => {
+    if (createdPayrun) {
+      router.push('/dashboard/payruns');
+    }
+    setCreatedPayrun(null);
+  };
+
+  const formatAmount = (amount: string): string => {
+    const num = BigInt(amount);
+    const usd = Number(num) / 1_000_000;
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(usd);
   };
 
   const handleToggleStatus = async (schedule: RecurringSchedule) => {
@@ -273,11 +305,24 @@ export default function SchedulesPage() {
 
               <div className="flex gap-3 mt-4">
                 <button
-                  onClick={() => handleRunNow(schedule.id)}
+                  onClick={() => handleRunNow(schedule.id, schedule.name)}
                   disabled={actionLoading !== null}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded text-sm transition-colors"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 rounded text-sm transition-colors flex items-center gap-2"
                 >
-                  {actionLoading === schedule.id ? '...' : 'Run Now'}
+                  {actionLoading === schedule.id ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Run Payroll
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={() => handleToggleStatus(schedule)}
@@ -316,7 +361,99 @@ export default function SchedulesPage() {
 
       {successMessage && (
         <div className="fixed bottom-6 right-6 px-6 py-3 bg-emerald-600 text-white rounded-lg shadow-lg z-50">
-          ✓ {successMessage}
+          {successMessage}
+        </div>
+      )}
+
+      {createdPayrun && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md border border-zinc-800">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <svg
+                  className="w-8 h-8 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-emerald-400">Payrun Created!</h3>
+              <p className="text-zinc-400 text-sm mt-1">
+                From schedule: {createdPayrun.scheduleName}
+              </p>
+            </div>
+
+            <div className="bg-zinc-800/50 rounded-lg p-4 mb-6 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Workers</span>
+                <span className="font-medium">{createdPayrun.totalPayslips}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Total Amount</span>
+                <span className="font-medium text-emerald-400">
+                  {formatAmount(createdPayrun.totalAmount)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-400">Payrun ID</span>
+                <span className="font-mono text-xs">
+                  {createdPayrun.payrunIdHex.slice(0, 12)}...
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-900/30 border border-amber-700/50 rounded-lg mb-6">
+              <p className="text-sm text-amber-300 flex items-start gap-2">
+                <svg
+                  className="w-5 h-5 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>
+                  To execute this payrun on-chain, go to the Payruns page and click &quot;Post On-Chain&quot;.
+                  You&apos;ll need to sign the transaction with your wallet.
+                </span>
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setCreatedPayrun(null)}
+                className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleGoToPayrun}
+                className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <span>Go to Payruns</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

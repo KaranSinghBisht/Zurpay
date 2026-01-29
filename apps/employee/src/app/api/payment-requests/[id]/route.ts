@@ -55,6 +55,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({
       id: paymentRequest.id,
       recipientWallet: paymentRequest.recipientWallet,
+      recipientConfAccount: paymentRequest.recipientConfAccount,
       amount: paymentRequest.amount,
       amountDisplay: formatAmountDisplay(paymentRequest.amount, paymentRequest.currency),
       currency: paymentRequest.currency,

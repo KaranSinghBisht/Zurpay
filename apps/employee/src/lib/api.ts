@@ -15,6 +15,7 @@ export interface PaylinkInfo {
 export interface PaymentRequestInfo {
   id: string;
   recipientWallet: string;
+  recipientConfAccount: string | null;
   amount: string;
   amountDisplay: string;
   currency: string;

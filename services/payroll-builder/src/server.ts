@@ -38,6 +38,7 @@ import { apiRateLimit, strictRateLimit } from './middleware/rateLimit';
 import { startCleanupScheduler, stopCleanupScheduler } from './services/cleanup';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { verifyClaimTransaction } from './claim-verifier';
+import { notifyDueSchedules, checkAndNotifySchedule } from './services/schedule-notifier';
 
 // =============================================================================
 // SECURITY: Environment variable validation
@@ -318,6 +319,80 @@ app.get('/health', async (_, res) => {
     res.json({ status: 'ok', database: 'connected' });
   } catch {
     res.status(500).json({ status: 'error', database: 'disconnected' });
+  }
+});
+
+// =============================================================================
+// Schedule notification endpoints (for cron jobs / manual triggers)
+// =============================================================================
+
+const CRON_SECRET = process.env.CRON_SECRET;
+
+// Middleware to verify cron secret for protected endpoints
+function verifyCronSecret(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+): void {
+  // Skip auth in development if no secret is configured
+  if (!CRON_SECRET && process.env.NODE_ENV !== 'production') {
+    next();
+    return;
+  }
+
+  const authHeader = req.headers.authorization;
+  if (!authHeader || authHeader !== `Bearer ${CRON_SECRET}`) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  next();
+}
+
+// Trigger schedule notification check
+// This endpoint can be called by a cron job (e.g., Vercel Cron, external cron service)
+// POST /api/cron/schedule-reminders
+// Optional query params:
+//   - hoursAhead: number of hours to look ahead (default: 24)
+app.post('/api/cron/schedule-reminders', verifyCronSecret, async (req, res) => {
+  try {
+    const hoursAhead = parseInt(req.query.hoursAhead as string) || 24;
+
+    logger.info({ hoursAhead }, 'Starting schedule reminder check');
+    const result = await notifyDueSchedules(hoursAhead);
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (err) {
+    logger.error({ error: err }, 'Schedule reminder check failed');
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    });
+  }
+});
+
+// Check and notify a single schedule (useful for testing)
+// POST /api/cron/schedule-reminders/:scheduleId
+app.post('/api/cron/schedule-reminders/:scheduleId', verifyCronSecret, async (req, res) => {
+  try {
+    const { scheduleId } = req.params;
+
+    logger.info({ scheduleId }, 'Checking single schedule for reminder');
+    const result = await checkAndNotifySchedule(scheduleId);
+
+    res.json({
+      success: result.emailSent,
+      ...result,
+    });
+  } catch (err) {
+    logger.error({ error: err, scheduleId: req.params.scheduleId }, 'Single schedule check failed');
+    res.status(500).json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error',
+    });
   }
 });
 

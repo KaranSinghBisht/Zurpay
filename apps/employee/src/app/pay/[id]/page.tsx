@@ -1,11 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PublicKey, Keypair, SystemProgram, Transaction } from '@solana/web3.js';
+import {
+  INCO_TOKEN_PROGRAM_ID,
+  DEFAULT_INCO_PROGRAM_ID,
+  transferIncoTokens,
+  fetchIncoAccount,
+  buildInitializeAccountInstruction,
+  INCO_ACCOUNT_SIZE,
+} from '@zurpay/sdk';
+import { encryptValue } from '@inco/solana-sdk/encryption';
+import { hexToBuffer } from '@inco/solana-sdk/utils';
 import { employeeApi, PaymentRequestInfo } from '../../../lib/api';
 import { ConfettiCelebration } from '../../../components/ConfettiCelebration';
+
+const INCO_MINT = new PublicKey('FGSe7zNdqqthJrJLmZ2dDTmJjLKdVrXJVAGxMuVoPqhC');
+const CONF_ACCOUNT_KEY = 'zurpay_payer_conf_account';
 
 export default function PayPage() {
   const params = useParams();
@@ -18,15 +31,29 @@ export default function PayPage() {
   const [requestInfo, setRequestInfo] = useState<PaymentRequestInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [payStep, setPayStep] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [txSig, setTxSig] = useState<string | null>(null);
+
+  // Payer's confidential account state
+  const [payerConfAccount, setPayerConfAccount] = useState<PublicKey | null>(null);
+  const [payerConfAccountInitialized, setPayerConfAccountInitialized] = useState(false);
+  const [checkingPayerAccount, setCheckingPayerAccount] = useState(false);
+  const [creatingPayerAccount, setCreatingPayerAccount] = useState(false);
 
   useEffect(() => {
     if (requestId) {
       loadRequestInfo();
     }
   }, [requestId]);
+
+  // Check payer's confidential account when wallet connects
+  useEffect(() => {
+    if (publicKey && connected && requestInfo) {
+      checkPayerConfAccount();
+    }
+  }, [publicKey, connected, requestInfo]);
 
   const loadRequestInfo = async () => {
     try {
@@ -42,42 +69,155 @@ export default function PayPage() {
     }
   };
 
+  const getStoredConfAccount = useCallback((): PublicKey | null => {
+    if (typeof window === 'undefined' || !publicKey) return null;
+    const key = `${CONF_ACCOUNT_KEY}_${publicKey.toBase58()}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        return new PublicKey(stored);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }, [publicKey]);
+
+  const storeConfAccount = useCallback((confAccount: PublicKey) => {
+    if (typeof window === 'undefined' || !publicKey) return;
+    const key = `${CONF_ACCOUNT_KEY}_${publicKey.toBase58()}`;
+    localStorage.setItem(key, confAccount.toBase58());
+  }, [publicKey]);
+
+  const checkPayerConfAccount = useCallback(async () => {
+    if (!publicKey || !connection) return;
+
+    setCheckingPayerAccount(true);
+    try {
+      // First check localStorage for existing account
+      const storedAccount = getStoredConfAccount();
+      if (storedAccount) {
+        const accountInfo = await fetchIncoAccount(connection, storedAccount);
+        if (accountInfo && accountInfo.state === 'initialized') {
+          setPayerConfAccount(storedAccount);
+          setPayerConfAccountInitialized(true);
+          setCheckingPayerAccount(false);
+          return;
+        }
+      }
+
+      // No valid stored account found
+      setPayerConfAccount(null);
+      setPayerConfAccountInitialized(false);
+    } catch (err) {
+      console.error('Error checking payer conf account:', err);
+    } finally {
+      setCheckingPayerAccount(false);
+    }
+  }, [publicKey, connection, getStoredConfAccount]);
+
+  const handleCreatePayerAccount = async () => {
+    if (!publicKey || !signTransaction) return;
+
+    setCreatingPayerAccount(true);
+    setError(null);
+
+    try {
+      // Get minimum rent
+      const rentLamports = await connection.getMinimumBalanceForRentExemption(INCO_ACCOUNT_SIZE);
+
+      // Create new keypair for the conf account
+      const newAccountKeypair = Keypair.generate();
+
+      const createAccountIx = SystemProgram.createAccount({
+        fromPubkey: publicKey,
+        newAccountPubkey: newAccountKeypair.publicKey,
+        lamports: rentLamports,
+        space: INCO_ACCOUNT_SIZE,
+        programId: INCO_TOKEN_PROGRAM_ID,
+      });
+
+      const initIx = buildInitializeAccountInstruction(
+        newAccountKeypair.publicKey,
+        INCO_MINT,
+        publicKey,
+        publicKey,
+        INCO_TOKEN_PROGRAM_ID,
+        DEFAULT_INCO_PROGRAM_ID
+      );
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      const tx = new Transaction().add(createAccountIx, initIx);
+      tx.recentBlockhash = blockhash;
+      tx.feePayer = publicKey;
+      tx.partialSign(newAccountKeypair);
+
+      const signedTx = await signTransaction(tx);
+      const signature = await connection.sendRawTransaction(signedTx.serialize());
+      await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight });
+
+      // Store the new account
+      storeConfAccount(newAccountKeypair.publicKey);
+      setPayerConfAccount(newAccountKeypair.publicKey);
+      setPayerConfAccountInitialized(true);
+    } catch (err) {
+      console.error('Failed to create payer conf account:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create confidential account');
+    } finally {
+      setCreatingPayerAccount(false);
+    }
+  };
+
   const handlePay = async () => {
-    if (!publicKey || !signTransaction || !requestInfo) return;
+    if (!publicKey || !signTransaction || !requestInfo || !payerConfAccount) return;
+
+    // Check if recipient has conf account
+    if (!requestInfo.recipientConfAccount) {
+      setError('Recipient does not have a confidential account. They need to create one first.');
+      return;
+    }
 
     setPaying(true);
     setError(null);
 
     try {
-      const recipientPubkey = new PublicKey(requestInfo.recipientWallet);
+      const recipientConfAccount = new PublicKey(requestInfo.recipientConfAccount);
 
-      // For demo: Transfer 0.001 SOL as proof of payment
-      // In production, this would be a proper USDC SPL token transfer
-      // or Inco confidential transfer
-      const demoAmountLamports = 1_000_000; // 0.001 SOL
+      // Step 1: Check accounts
+      setPayStep('Checking accounts...');
+      const [payerInfo, recipientInfo] = await Promise.all([
+        fetchIncoAccount(connection, payerConfAccount),
+        fetchIncoAccount(connection, recipientConfAccount),
+      ]);
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      if (!payerInfo || payerInfo.state !== 'initialized') {
+        throw new Error('Your confidential account is not initialized. Please create one first.');
+      }
 
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: recipientPubkey,
-          lamports: demoAmountLamports,
-        })
+      if (!recipientInfo || recipientInfo.state !== 'initialized') {
+        throw new Error('Recipient confidential account is not initialized.');
+      }
+
+      // Step 2: Encrypt the amount
+      setPayStep('Encrypting amount...');
+      const amountBigInt = BigInt(requestInfo.amount);
+      const encryptedHex = await encryptValue(amountBigInt);
+      const encryptedAmount = new Uint8Array(hexToBuffer(encryptedHex));
+
+      // Step 3: Execute confidential transfer
+      setPayStep('Executing confidential transfer...');
+      const signature = await transferIncoTokens(
+        connection,
+        { publicKey, signTransaction },
+        payerConfAccount,
+        recipientConfAccount,
+        encryptedAmount,
+        INCO_TOKEN_PROGRAM_ID,
+        DEFAULT_INCO_PROGRAM_ID
       );
 
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
-      const signedTx = await signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTx.serialize());
-
-      await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight,
-      });
-
+      // Step 4: Record the payment
+      setPayStep('Recording payment...');
       const payResult = await employeeApi.paymentRequests.pay(requestId, {
         payerWallet: publicKey.toBase58(),
         txSig: signature,
@@ -94,6 +234,7 @@ export default function PayPage() {
       setError(err instanceof Error ? err.message : 'Payment failed');
     } finally {
       setPaying(false);
+      setPayStep('');
     }
   };
 
@@ -154,7 +295,7 @@ export default function PayPage() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold mb-2 text-emerald-400">Payment Sent!</h1>
-              <p className="text-zinc-400">Your payment has been successfully processed</p>
+              <p className="text-zinc-400">Your confidential payment has been successfully processed</p>
             </div>
 
             <div className="bg-zinc-800/50 rounded-lg p-4 mb-6">
@@ -169,6 +310,15 @@ export default function PayPage() {
                   {requestInfo?.recipientWallet.slice(-4)}
                 </span>
               </div>
+            </div>
+
+            <div className="p-3 bg-emerald-900/20 border border-emerald-800 rounded-lg mb-4">
+              <p className="text-sm text-emerald-300 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                This payment is encrypted and private
+              </p>
             </div>
 
             {txSig && (
@@ -188,6 +338,9 @@ export default function PayPage() {
       </>
     );
   }
+
+  const needsConfAccount = connected && publicKey && !payerConfAccountInitialized && !checkingPayerAccount;
+  const recipientMissingConfAccount = requestInfo && !requestInfo.recipientConfAccount;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -209,7 +362,7 @@ export default function PayPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold mb-2">Payment Request</h1>
-          <p className="text-zinc-400">Someone requested a payment from you</p>
+          <p className="text-zinc-400">Someone requested a confidential payment from you</p>
         </div>
 
         <div className="text-center mb-8">
@@ -231,6 +384,15 @@ export default function PayPage() {
               <span>{new Date(requestInfo.expiresAt).toLocaleString()}</span>
             </div>
           )}
+          <div className="flex justify-between text-sm">
+            <span className="text-zinc-400">Transfer Type</span>
+            <span className="text-emerald-400 flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Confidential (Inco)
+            </span>
+          </div>
         </div>
 
         {error && (
@@ -239,20 +401,51 @@ export default function PayPage() {
           </div>
         )}
 
+        {recipientMissingConfAccount && (
+          <div className="p-3 bg-amber-900/50 border border-amber-700 rounded-lg text-amber-300 text-sm mb-4">
+            The recipient hasn&apos;t set up their confidential account yet. They need to create one before you can pay this request.
+          </div>
+        )}
+
         {!connected ? (
           <div className="text-center">
             <p className="text-zinc-400 mb-4">Connect your wallet to pay this request</p>
           </div>
+        ) : checkingPayerAccount ? (
+          <div className="text-center py-4">
+            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <p className="text-sm text-zinc-400">Checking your confidential account...</p>
+          </div>
+        ) : needsConfAccount ? (
+          <div className="space-y-4">
+            <div className="p-3 bg-amber-900/50 border border-amber-700 rounded-lg text-amber-300 text-sm">
+              You need to create a confidential account to make private payments.
+            </div>
+            <button
+              onClick={handleCreatePayerAccount}
+              disabled={creatingPayerAccount}
+              className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
+            >
+              {creatingPayerAccount ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Creating Confidential Account...
+                </span>
+              ) : (
+                'Create Confidential Account'
+              )}
+            </button>
+          </div>
         ) : (
           <button
             onClick={handlePay}
-            disabled={paying}
+            disabled={paying || !!recipientMissingConfAccount}
             className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded-lg transition-colors font-medium"
           >
             {paying ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Processing...
+                {payStep || 'Processing...'}
               </span>
             ) : (
               `Pay ${requestInfo?.amountDisplay}`
@@ -261,7 +454,7 @@ export default function PayPage() {
         )}
 
         <p className="text-xs text-zinc-500 text-center mt-4">
-          Payment will be sent directly to the recipient&apos;s wallet
+          Payment will be sent via encrypted confidential transfer
         </p>
       </div>
     </div>

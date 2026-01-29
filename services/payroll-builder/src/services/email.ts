@@ -48,6 +48,19 @@ export interface SendPaymentRequestStatusParams {
   txSignature?: string;
 }
 
+export interface SendScheduleReminderParams {
+  to: string;
+  recipientName?: string;
+  orgName: string;
+  scheduleName: string;
+  scheduleId: string;
+  workerCount: number;
+  estimatedAmount: string;
+  currency: string;
+  nextRunAt: Date;
+  dashboardUrl: string;
+}
+
 export async function sendClaimLinkEmail(params: SendClaimLinkParams): Promise<boolean> {
   if (!resend) {
     console.log('[Email] Resend not configured, skipping email to:', params.to);
@@ -483,10 +496,163 @@ function generatePaymentRequestStatusEmailHtml(params: {
   `.trim();
 }
 
+export async function sendScheduleReminderEmail(
+  params: SendScheduleReminderParams
+): Promise<boolean> {
+  if (!resend) {
+    console.log('[Email] Resend not configured, skipping schedule reminder to:', params.to);
+    console.log('[Email] Schedule reminder would be:', {
+      scheduleName: params.scheduleName,
+      nextRunAt: params.nextRunAt,
+      dashboardUrl: params.dashboardUrl,
+    });
+    return false;
+  }
+
+  const formattedAmount = formatAmount(params.estimatedAmount, params.currency);
+  const formattedDate = params.nextRunAt.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: params.to,
+      subject: `[Zurpay] Payroll scheduled for ${formattedDate} - ${params.scheduleName}`,
+      html: generateScheduleReminderEmailHtml({
+        recipientName: params.recipientName,
+        orgName: params.orgName,
+        scheduleName: params.scheduleName,
+        workerCount: params.workerCount,
+        estimatedAmount: formattedAmount,
+        nextRunAt: formattedDate,
+        dashboardUrl: params.dashboardUrl,
+      }),
+    });
+
+    if (error) {
+      console.error('[Email] Failed to send schedule reminder:', error);
+      return false;
+    }
+
+    console.log('[Email] Schedule reminder sent to:', params.to);
+    return true;
+  } catch (err) {
+    console.error('[Email] Error sending schedule reminder:', err);
+    return false;
+  }
+}
+
+function generateScheduleReminderEmailHtml(params: {
+  recipientName?: string;
+  orgName: string;
+  scheduleName: string;
+  workerCount: number;
+  estimatedAmount: string;
+  nextRunAt: string;
+  dashboardUrl: string;
+}): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #0a0a0f; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #0a0a0f; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 500px; background-color: #12121a; border-radius: 16px; border: 1px solid #27272a;">
+          <tr>
+            <td style="padding: 40px;">
+              <div style="text-align: center; margin-bottom: 32px;">
+                <div style="display: inline-block; width: 48px; height: 48px; background-color: #3b82f6; border-radius: 12px; line-height: 48px; font-size: 24px; font-weight: bold; color: white;">Z</div>
+              </div>
+
+              <h1 style="color: #ffffff; font-size: 24px; font-weight: 600; text-align: center; margin: 0 0 8px 0;">
+                Payroll Due Soon
+              </h1>
+
+              <p style="color: #9ca3af; font-size: 14px; text-align: center; margin: 0 0 32px 0;">
+                ${params.recipientName ? `Hi ${params.recipientName}, ` : ''}Your recurring payroll "${params.scheduleName}" is scheduled to run soon.
+              </p>
+
+              <div style="background-color: #1a1a25; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #9ca3af; font-size: 14px;">Schedule</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                      <span style="color: #ffffff; font-weight: 600; font-size: 14px;">${params.scheduleName}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #9ca3af; font-size: 14px;">Scheduled Date</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                      <span style="color: #3b82f6; font-weight: 600; font-size: 14px;">${params.nextRunAt}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #9ca3af; font-size: 14px;">Workers</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                      <span style="color: #ffffff; font-weight: 600; font-size: 14px;">${params.workerCount}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0;">
+                      <span style="color: #9ca3af; font-size: 14px;">Estimated Total</span>
+                    </td>
+                    <td style="padding: 8px 0; text-align: right;">
+                      <span style="color: #10b981; font-weight: 600; font-size: 14px;">${params.estimatedAmount}</span>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
+              <a href="${params.dashboardUrl}" style="display: block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 16px 24px; border-radius: 8px; font-weight: 600; text-align: center; margin-bottom: 24px;">
+                Run Payroll Now
+              </a>
+
+              <p style="color: #6b7280; font-size: 12px; text-align: center; margin: 0;">
+                Note: You'll need to sign the transaction to post on-chain.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 24px 40px; border-top: 1px solid #27272a;">
+              <p style="color: #6b7280; font-size: 11px; text-align: center; margin: 0;">
+                This is an automated reminder from Zurpay. Manage your schedules in the admin dashboard.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <p style="color: #4b5563; font-size: 11px; text-align: center; margin-top: 24px;">
+          Powered by Zurpay - Confidential Payroll on Solana
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
 export const emailService = {
   sendClaimLink: sendClaimLinkEmail,
   sendPayrunReady: sendPayrunReadyEmail,
   sendPaymentRequestToOrg: sendPaymentRequestToOrgEmail,
   sendPaymentRequestStatus: sendPaymentRequestStatusEmail,
+  sendScheduleReminder: sendScheduleReminderEmail,
   isConfigured: () => resend !== null,
 };
