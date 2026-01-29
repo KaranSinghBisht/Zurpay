@@ -62,7 +62,6 @@ const menuItems = [
   { icon: Calendar, label: 'Schedules', path: '/dashboard/schedules' },
   { icon: LinkIcon, label: 'Paylinks', path: '/dashboard/paylinks' },
   { icon: FileText, label: 'Requests', path: '/dashboard/requests' },
-  { icon: ShieldCheck, label: 'Treasury', path: '/dashboard/treasury' },
   { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
 ];
 

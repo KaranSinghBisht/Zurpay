@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, TransactionInstruction, SystemProgram } from '@solana/web3.js';
-import { api, Org, MultisigProposal, PrivacyCashStatus } from '../../../../lib/api';
+import { api, Org, MultisigProposal } from '../../../../lib/api';
 import { encryptAmountForInco } from '../../../../lib/crypto';
 
 const ZURPAY_PROGRAM_ID = new PublicKey('Cf9tReQuvS6cb4awYPCVozQnCWYdqia62yRShJs2URy9');
@@ -90,18 +90,6 @@ export default function TreasuryPage() {
   const [orgInitialized, setOrgInitialized] = useState<boolean | null>(null);
   const [checkingTreasury, setCheckingTreasury] = useState(false);
 
-  // Privacy Cash state
-  const [privacyCashStatus, setPrivacyCashStatus] = useState<PrivacyCashStatus | null>(null);
-  const [loadingPrivacyCash, setLoadingPrivacyCash] = useState(false);
-  const [privateFundAmount, setPrivateFundAmount] = useState('');
-  const [fundingPrivately, setFundingPrivately] = useState(false);
-  const [privateFundResult, setPrivateFundResult] = useState<{
-    success: boolean;
-    withdrawTxSignature: string;
-    amountReceived: number;
-    feePaid: number;
-  } | null>(null);
-
   const checkTreasuryStatus = useCallback(
     async (orgIdHex: string) => {
       try {
@@ -152,15 +140,13 @@ export default function TreasuryPage() {
       const selectedOrg = orgs[0];
       setOrg(selectedOrg);
 
-      const [multisigConfig, proposalList, pcStatus] = await Promise.all([
+      const [multisigConfig, proposalList] = await Promise.all([
         api.multisig.get(selectedOrg.id, wallet),
         api.multisig.listProposals(selectedOrg.id, wallet).catch(() => []),
-        api.treasury.getPrivacyCashStatus(selectedOrg.id, wallet).catch(() => null),
       ]);
 
       setConfig(multisigConfig);
       setProposals(proposalList);
-      setPrivacyCashStatus(pcStatus);
 
       if (selectedOrg.orgIdHex) {
         await checkTreasuryStatus(selectedOrg.orgIdHex);
@@ -399,46 +385,6 @@ export default function TreasuryPage() {
       setError(err instanceof Error ? err.message : 'Failed to initialize treasury');
     } finally {
       setInitializingTreasury(false);
-    }
-  };
-
-  const handlePrivateFund = async () => {
-    if (!org || !wallet || !treasuryPda || !privateFundAmount) return;
-
-    const amount = parseFloat(privateFundAmount);
-    if (isNaN(amount) || amount <= 0) {
-      setError('Please enter a valid amount');
-      return;
-    }
-
-    try {
-      setFundingPrivately(true);
-      setError(null);
-      setPrivateFundResult(null);
-
-      const result = await api.treasury.fundPrivately(
-        org.id,
-        { amountUSDC: amount, treasuryAddress: treasuryPda },
-        wallet
-      );
-
-      setPrivateFundResult({
-        success: result.success,
-        withdrawTxSignature: result.withdrawTxSignature,
-        amountReceived: result.amountReceived,
-        feePaid: result.feePaid,
-      });
-
-      setPrivateFundAmount('');
-
-      // Refresh Privacy Cash status
-      const newStatus = await api.treasury.getPrivacyCashStatus(org.id, wallet);
-      setPrivacyCashStatus(newStatus);
-    } catch (err) {
-      console.error('Private funding error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fund treasury privately');
-    } finally {
-      setFundingPrivately(false);
     }
   };
 
@@ -691,133 +637,6 @@ export default function TreasuryPage() {
                     {depositing ? 'Depositing...' : 'Deposit'}
                   </button>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Privacy Cash Section */}
-        <div className="glass-card rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-2">Privacy Cash - Private Funding</h3>
-          <p className="text-zinc-400 text-sm mb-4">
-            Fund your treasury without revealing the funding source. Privacy Cash breaks the
-            on-chain link between your wallet and the treasury.
-          </p>
-
-          {!privacyCashStatus ? (
-            <div className="text-center py-8">
-              <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <span className="text-zinc-400">Loading Privacy Cash status...</span>
-            </div>
-          ) : !privacyCashStatus.enabled ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800 flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-zinc-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-              <h4 className="text-lg font-medium mb-2">Privacy Cash Not Configured</h4>
-              <p className="text-zinc-400 text-sm">
-                Contact your administrator to enable Privacy Cash integration.
-              </p>
-              <p className="text-zinc-500 text-xs mt-2">
-                Requires PRIVACY_CASH_PRIVATE_KEY environment variable.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                <span className="text-emerald-400 font-medium">Enabled</span>
-                <span className="text-zinc-500 text-sm ml-2">
-                  Shielded Balance: {privacyCashStatus.shieldedBalanceUSDC?.toFixed(2) ?? '0.00'}{' '}
-                  USDC
-                </span>
-              </div>
-
-              {privacyCashStatus.error && (
-                <div className="p-3 bg-yellow-900/30 border border-yellow-700 rounded-lg text-yellow-300 text-sm">
-                  {privacyCashStatus.error}
-                </div>
-              )}
-
-              <div className="p-4 bg-zinc-800/50 rounded-lg">
-                <h4 className="text-sm font-medium text-zinc-300 mb-2">How Private Funding Works</h4>
-                <ol className="text-xs text-zinc-400 space-y-1 list-decimal list-inside">
-                  <li>Your funds are deposited into Privacy Cash shielded pool</li>
-                  <li>Withdrawal is made to your treasury from the relayer</li>
-                  <li>On-chain: treasury receives from relayer, not your wallet</li>
-                  <li>No on-chain link between you and the treasury funding</li>
-                </ol>
-              </div>
-
-              {treasuryPda && treasuryInitialized && (
-                <div className="border-t border-zinc-700 pt-4 mt-4">
-                  <h4 className="text-sm font-medium text-zinc-300 mb-3">Fund Treasury Privately</h4>
-                  <p className="text-xs text-zinc-500 mb-3">
-                    Fee: 0.35% + ~0.006 SOL. Funds will appear in treasury from the Privacy Cash
-                    relayer.
-                  </p>
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={privateFundAmount}
-                          onChange={(e) => setPrivateFundAmount(e.target.value)}
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                          className="w-full px-4 py-2 pr-16 bg-zinc-800 border border-zinc-700 rounded-lg focus:outline-none focus:border-emerald-500 text-white"
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">
-                          USDC
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handlePrivateFund}
-                      disabled={fundingPrivately || !privateFundAmount || !connected}
-                      className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-zinc-700 rounded-lg transition-colors whitespace-nowrap"
-                    >
-                      {fundingPrivately ? 'Processing...' : 'Fund Privately'}
-                    </button>
-                  </div>
-
-                  {privateFundResult && (
-                    <div className="mt-4 p-4 bg-emerald-900/30 border border-emerald-700 rounded-lg">
-                      <h5 className="text-emerald-400 font-medium mb-2">Private Funding Complete</h5>
-                      <div className="text-sm text-zinc-300 space-y-1">
-                        <p>Amount received: {privateFundResult.amountReceived.toFixed(2)} USDC</p>
-                        <p>Fee paid: {privateFundResult.feePaid.toFixed(4)} USDC</p>
-                        <p className="text-xs text-zinc-400 mt-2 break-all">
-                          TX: {privateFundResult.withdrawTxSignature}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!treasuryInitialized && (
-                <div className="p-3 bg-zinc-800 rounded-lg text-zinc-400 text-sm">
-                  Initialize your Inco Treasury above before using private funding.
-                </div>
-              )}
-
-              <div className="text-xs text-zinc-500 mt-4">
-                <strong>Privacy Note:</strong> While amounts are encrypted via Inco FHE, Privacy
-                Cash adds account unlinkability - employees cannot trace funds back to your wallet.
               </div>
             </div>
           )}
