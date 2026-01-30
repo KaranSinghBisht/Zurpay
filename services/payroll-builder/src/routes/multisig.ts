@@ -23,12 +23,13 @@ const ConfigureMultisigSchema = z.object({
     })
   ),
   threshold: z.number().min(1),
+  createKeyPubkey: z.string().optional(),
 });
 
 const UpdateMultisigSchema = z.object({
   multisigPda: z.string(),
   vaultPda: z.string(),
-  createKey: z.string(),
+  createKeyPubkey: z.string(),
   threshold: z.number().min(1),
 });
 
@@ -87,10 +88,22 @@ router.post(
         });
       }
 
-      const createKey = Keypair.generate();
+      if (!data.createKeyPubkey) {
+        return res.status(400).json({
+          error:
+            'createKeyPubkey is required. Generate a keypair on the client and send the public key.',
+        });
+      }
+
+      let createKeyPublicKey: PublicKey;
+      try {
+        createKeyPublicKey = new PublicKey(data.createKeyPubkey);
+      } catch {
+        return res.status(400).json({ error: 'Invalid createKeyPubkey format' });
+      }
 
       const { multisigPda, vaultPda, instruction } = await getCreateMultisigInstruction({
-        createKey,
+        createKey: { publicKey: createKeyPublicKey } as Keypair,
         creator: new PublicKey(wallet),
         members: data.members as MultisigMember[],
         threshold: data.threshold,
@@ -107,7 +120,7 @@ router.post(
       };
 
       return res.json({
-        createKey: bs58.encode(createKey.secretKey),
+        createKeyPubkey: data.createKeyPubkey,
         multisigPda: multisigPda.toBase58(),
         vaultPda: vaultPda.toBase58(),
         threshold: data.threshold,
@@ -146,7 +159,7 @@ router.post(
           multisigEnabled: true,
           multisigPda: data.multisigPda,
           multisigVaultPda: data.vaultPda,
-          multisigCreateKey: data.createKey,
+          multisigCreateKey: data.createKeyPubkey,
           multisigThreshold: data.threshold,
         },
       });
