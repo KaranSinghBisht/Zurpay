@@ -33,7 +33,7 @@ export class SunspotCliProver implements Prover {
   private cacheDir: string;
 
   constructor(circuitDir?: string) {
-    this.sunspotBin = process.env.SUNSPOT_BIN || '/Users/kryptos/sunspot/go/sunspot';
+    this.sunspotBin = process.env.SUNSPOT_BIN || 'sunspot';
     this.nargoBin = process.env.NARGO_BIN || 'nargo';
     this.circuitDir = circuitDir || join(process.cwd(), '../../circuits/claim_eligibility');
     this.cacheDir = join(process.cwd(), '.cache/sunspot');
@@ -229,14 +229,25 @@ export class MockProver implements Prover {
 
 export function getProver(): Prover {
   const useMock = process.env.USE_MOCK_PROVER === 'true';
-  const sunspotBin = process.env.SUNSPOT_BIN || '/Users/kryptos/sunspot/go/sunspot';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const sunspotBin = process.env.SUNSPOT_BIN || 'sunspot';
   const pkPath = join(
     process.cwd(),
     '../../circuits/claim_eligibility/target/claim_eligibility.pk'
   );
 
-  if (useMock || !existsSync(sunspotBin) || !existsSync(pkPath)) {
-    console.log('[Prover] Using MockProver');
+  const wouldUseMock = useMock || !existsSync(sunspotBin) || !existsSync(pkPath);
+
+  if (isProduction && wouldUseMock) {
+    throw new Error(
+      'FATAL: MockProver cannot be used in production. ' +
+        'Ensure SUNSPOT_BIN is set and proving key exists at: ' +
+        pkPath
+    );
+  }
+
+  if (wouldUseMock) {
+    console.log('[Prover] Using MockProver (development only)');
     return new MockProver();
   }
 
