@@ -27,11 +27,20 @@ function getRedisClient(): Redis | null {
   if (redis) return redis;
 
   const redisUrl = process.env.REDIS_URL;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const requireRedis = process.env.REQUIRE_REDIS_RATE_LIMIT === 'true';
+
   if (!redisUrl) {
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction && requireRedis) {
+      throw new Error(
+        'FATAL: REDIS_URL is required in production when REQUIRE_REDIS_RATE_LIMIT=true. ' +
+          'In-memory rate limiting is not suitable for horizontal scaling.'
+      );
+    }
+    if (isProduction) {
       console.warn(
         'WARN: REDIS_URL not set in production. Rate limiting will use in-memory store ' +
-          '(not suitable for horizontal scaling).'
+          '(not suitable for horizontal scaling). Set REQUIRE_REDIS_RATE_LIMIT=true to enforce Redis.'
       );
     }
     return null;
