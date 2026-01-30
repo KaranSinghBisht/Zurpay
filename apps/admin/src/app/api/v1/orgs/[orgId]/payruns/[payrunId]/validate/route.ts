@@ -25,11 +25,21 @@ function bytesToHex(bytes: Uint8Array): string {
     .join('');
 }
 
-const ENCRYPTION_KEY = process.env.PAYROLL_ENCRYPTION_KEY || 'change-me-please-use-32-chars-or';
+function getEncryptionKey(): string {
+  const key = process.env.PAYROLL_ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('PAYROLL_ENCRYPTION_KEY environment variable is required');
+  }
+  if (key.length < 32) {
+    throw new Error('PAYROLL_ENCRYPTION_KEY must be at least 32 characters');
+  }
+  return key;
+}
 
 function encryptSecret(secret: Uint8Array): string {
   const iv = randomBytes(16);
-  const key = Buffer.from(ENCRYPTION_KEY.slice(0, 32).padEnd(32, '0'));
+  const encryptionKey = getEncryptionKey();
+  const key = Buffer.from(encryptionKey.slice(0, 32).padEnd(32, '0'));
   const cipher = createCipheriv('aes-256-cbc', key, iv);
   const encrypted = Buffer.concat([cipher.update(Buffer.from(secret)), cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');

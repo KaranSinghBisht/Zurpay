@@ -8,7 +8,16 @@ import { execSync } from 'child_process';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-const ENCRYPTION_KEY = process.env.PAYROLL_ENCRYPTION_KEY || 'change-me-please-use-32-chars-or';
+function getEncryptionKey(): string {
+  const key = process.env.PAYROLL_ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('PAYROLL_ENCRYPTION_KEY environment variable is required');
+  }
+  if (key.length < 32) {
+    throw new Error('PAYROLL_ENCRYPTION_KEY must be at least 32 characters');
+  }
+  return key;
+}
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
@@ -37,7 +46,8 @@ function decryptSecret(encryptedData: string): Uint8Array {
   const [ivHex, encryptedHex] = encryptedData.split(':');
   const iv = Buffer.from(ivHex, 'hex');
   const encrypted = Buffer.from(encryptedHex, 'hex');
-  const key = Buffer.from(ENCRYPTION_KEY.slice(0, 32).padEnd(32, '0'));
+  const encryptionKey = getEncryptionKey();
+  const key = Buffer.from(encryptionKey.slice(0, 32).padEnd(32, '0'));
   const decipher = createDecipheriv('aes-256-cbc', key, iv);
   const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
   return new Uint8Array(decrypted);
