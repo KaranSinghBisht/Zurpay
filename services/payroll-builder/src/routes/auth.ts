@@ -57,6 +57,7 @@ function verifySignature(message: string, signature: string, address: string): b
 const JWT_ALGORITHM = 'HS256';
 const JWT_ISSUER = process.env.JWT_ISSUER || 'zurpay';
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'zurpay';
+const SOLANA_CHAIN_ID = process.env.SOLANA_CHAIN_ID || 'devnet';
 
 async function createJWT(wallet: string): Promise<string> {
   const secret = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -119,7 +120,7 @@ router.post('/challenge', async (req, res) => {
     statement: 'Sign in to Zurpay payroll system',
     uri,
     version: '1',
-    chainId: 'devnet', // TODO: Make configurable
+    chainId: SOLANA_CHAIN_ID,
     nonce,
     issuedAt: issuedAt.toISOString(),
     expirationTime: expiresAt.toISOString(), // 5 minutes
