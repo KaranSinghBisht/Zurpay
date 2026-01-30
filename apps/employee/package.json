@@ -17,6 +17,7 @@
     "@solana/web3.js": "^1.95.0",
     "@zurpay/db": "*",
     "@zurpay/sdk": "*",
+    "framer-motion": "^12.29.2",
     "next": "14.2.0",
     "next-auth": "^4.24.13",
     "react": "^18.2.0",
