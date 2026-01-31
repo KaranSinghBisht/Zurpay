@@ -42,20 +42,7 @@ export default function PayPage() {
   const [checkingPayerAccount, setCheckingPayerAccount] = useState(false);
   const [creatingPayerAccount, setCreatingPayerAccount] = useState(false);
 
-  useEffect(() => {
-    if (requestId) {
-      loadRequestInfo();
-    }
-  }, [requestId]);
-
-  // Check payer's confidential account when wallet connects
-  useEffect(() => {
-    if (publicKey && connected && requestInfo) {
-      checkPayerConfAccount();
-    }
-  }, [publicKey, connected, requestInfo]);
-
-  const loadRequestInfo = async () => {
+  const loadRequestInfo = useCallback(async () => {
     try {
       const result = await employeeApi.paymentRequests.get(requestId);
       if (!result.ok) {
@@ -67,7 +54,13 @@ export default function PayPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [requestId]);
+
+  useEffect(() => {
+    if (requestId) {
+      loadRequestInfo();
+    }
+  }, [requestId, loadRequestInfo]);
 
   const getStoredConfAccount = useCallback((): PublicKey | null => {
     if (typeof window === 'undefined' || !publicKey) return null;
@@ -83,11 +76,14 @@ export default function PayPage() {
     return null;
   }, [publicKey]);
 
-  const storeConfAccount = useCallback((confAccount: PublicKey) => {
-    if (typeof window === 'undefined' || !publicKey) return;
-    const key = `${CONF_ACCOUNT_KEY}_${publicKey.toBase58()}`;
-    localStorage.setItem(key, confAccount.toBase58());
-  }, [publicKey]);
+  const storeConfAccount = useCallback(
+    (confAccount: PublicKey) => {
+      if (typeof window === 'undefined' || !publicKey) return;
+      const key = `${CONF_ACCOUNT_KEY}_${publicKey.toBase58()}`;
+      localStorage.setItem(key, confAccount.toBase58());
+    },
+    [publicKey]
+  );
 
   const checkPayerConfAccount = useCallback(async () => {
     if (!publicKey || !connection) return;
@@ -115,6 +111,12 @@ export default function PayPage() {
       setCheckingPayerAccount(false);
     }
   }, [publicKey, connection, getStoredConfAccount]);
+
+  useEffect(() => {
+    if (publicKey && connected && requestInfo) {
+      checkPayerConfAccount();
+    }
+  }, [publicKey, connected, requestInfo, checkPayerConfAccount]);
 
   const handleCreatePayerAccount = async () => {
     if (!publicKey || !signTransaction) return;
@@ -295,7 +297,9 @@ export default function PayPage() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold mb-2 text-emerald-400">Payment Sent!</h1>
-              <p className="text-zinc-400">Your confidential payment has been successfully processed</p>
+              <p className="text-zinc-400">
+                Your confidential payment has been successfully processed
+              </p>
             </div>
 
             <div className="bg-zinc-800/50 rounded-lg p-4 mb-6">
@@ -315,7 +319,12 @@ export default function PayPage() {
             <div className="p-3 bg-emerald-900/20 border border-emerald-800 rounded-lg mb-4">
               <p className="text-sm text-emerald-300 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
                 </svg>
                 This payment is encrypted and private
               </p>
@@ -339,7 +348,8 @@ export default function PayPage() {
     );
   }
 
-  const needsConfAccount = connected && publicKey && !payerConfAccountInitialized && !checkingPayerAccount;
+  const needsConfAccount =
+    connected && publicKey && !payerConfAccountInitialized && !checkingPayerAccount;
   const recipientMissingConfAccount = requestInfo && !requestInfo.recipientConfAccount;
 
   return (
@@ -388,7 +398,12 @@ export default function PayPage() {
             <span className="text-zinc-400">Transfer Type</span>
             <span className="text-emerald-400 flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
               Confidential (Inco)
             </span>
@@ -403,7 +418,8 @@ export default function PayPage() {
 
         {recipientMissingConfAccount && (
           <div className="p-3 bg-amber-900/50 border border-amber-700 rounded-lg text-amber-300 text-sm mb-4">
-            The recipient hasn&apos;t set up their confidential account yet. They need to create one before you can pay this request.
+            The recipient hasn&apos;t set up their confidential account yet. They need to create one
+            before you can pay this request.
           </div>
         )}
 

@@ -12,7 +12,8 @@ import {
 } from '@zurpay/sdk';
 import { employeeApi } from '../../lib/api';
 
-const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+// Inco USDC mint on devnet - must match the mint used in pay/[id]/page.tsx
+const INCO_MINT = 'FGSe7zNdqqthJrJLmZ2dDTmJjLKdVrXJVAGxMuVoPqhC';
 
 export default function RequestPaymentPage() {
   const { connection } = useConnection();
@@ -71,7 +72,7 @@ export default function RequestPaymentPage() {
 
     try {
       const { PublicKey: PK } = await import('@solana/web3.js');
-      const mintPubkey = new PK(USDC_MINT);
+      const mintPubkey = new PK(INCO_MINT);
       const newAccount = Keypair.generate();
 
       const lamports = await connection.getMinimumBalanceForRentExemption(INCO_ACCOUNT_SIZE);
