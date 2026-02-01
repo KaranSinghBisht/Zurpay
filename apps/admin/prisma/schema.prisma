@@ -1,0 +1,786 @@
+// Zurpay Payroll OS - Prisma Schema
+// This schema implements the product layer on top of the hackathon MVP
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// Organization & Access Control
+// =============================================================================
+
+model Org {
+  id                  String   @id @default(cuid())
+  orgIdHex            String   @unique // 32 bytes hex - matches on-chain org_id
+  name                String
+  ownerWallet         String // Admin wallet pubkey (base58)
+  treasuryConfAccount String // Inco confidential account pubkey
+  zkVerifierProgramId String // Sunspot verifier program ID
+  incoProgramId       String // Inco Lightning program ID
+  settings            String? // JSON blob for org settings
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Squads Multi-Sig Configuration
+  multisigEnabled   Boolean @default(false)
+  multisigPda       String? // Squads multisig PDA
+  multisigVaultPda  String? // Squads vault PDA (holds funds)
+  multisigCreateKey String? // Create key used to derive multisig
+  multisigThreshold Int? // Required approvals for execution
+
+  // Relations
+  members            OrgMember[]
+  workers            Worker[]
+  payruns            Payrun[]
+  paylinks           Paylink[]
+  auditLogs          AuditLog[]
+  ledgerEntries      LedgerEntry[]
+  multisigProposals  MultisigProposal[]
+  recurringSchedules RecurringSchedule[]
+
+  @@index([ownerWallet])
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  APPROVER
+  TREASURER
+  VIEWER
+  AUDITOR
+}
+
+model OrgMember {
+  id        String     @id @default(cuid())
+  orgId     String
+  wallet    String // Member wallet pubkey (base58)
+  role      MemberRole
+  invitedBy String? // Wallet that invited this member
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, wallet])
+  @@index([wallet])
+}
+
+// =============================================================================
+// Worker Graph & Compensation
+// =============================================================================
+
+enum WorkerType {
+  EMPLOYEE
+  CONTRACTOR
+}
+
+enum WorkerStatus {
+  INVITED // Invite sent, not yet accepted
+  ACTIVE // Accepted invite, can receive payments
+  INACTIVE // Deactivated
+}
+
+model Worker {
+  id       String       @id @default(cuid())
+  orgId    String
+  email    String? // Primary identifier for invite/auth (optional for legacy workers)
+  googleId String? // Google OAuth ID for authentication
+  wallet   String? // Worker's wallet - OPTIONAL, set at claim time or legacy
+  type     WorkerType   @default(EMPLOYEE)
+  status   WorkerStatus @default(ACTIVE)
+
+  // Profile metadata (stored privately, never on-chain)
+  displayName String?
+  externalId  String? // For integration with external HR systems
+
+  startDate DateTime?
+  endDate   DateTime?
+  metadata  String? // JSON blob for additional data
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  org       Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  compPlans CompPlan[]
+  payslips  Payslip[]
+  invite    WorkerInvite?
+
+  @@unique([orgId, email]) // Unique constraint for email-based workers
+  @@unique([orgId, wallet]) // Keep legacy wallet constraint for backwards compat
+  @@index([orgId, status])
+  @@index([googleId])
+}
+
+// Worker invite for email-based onboarding
+model WorkerInvite {
+  id         String    @id @default(cuid())
+  workerId   String    @unique
+  token      String    @unique // Invite token in URL
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+enum PaySchedule {
+  MONTHLY
+  BIWEEKLY
+  WEEKLY
+  AD_HOC
+}
+
+model CompPlan {
+  id       String      @id @default(cuid())
+  workerId String
+  currency String      @default("USDC") // Token symbol
+  schedule PaySchedule @default(MONTHLY)
+
+  // Amount stored privately in DB (never exposed on-chain in plaintext)
+  // Stored as string to handle large numbers precisely
+  rateAmount String // e.g., "5000000000" for 5000 USDC (6 decimals)
+
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime? // Null means currently active
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Cascade)
+
+  @@index([workerId, effectiveFrom])
+}
+
+// =============================================================================
+// Payrun Lifecycle
+// =============================================================================
+
+enum PayrunStatus {
+  DRAFT // Created, payslips can be added/edited
+  PENDING_APPROVAL // Awaiting approval from designated approvers
+  READY // Validated, awaiting execution
+  FUNDING_REQUIRED // Insufficient treasury funds
+  EXECUTING // Batch payouts running
+  ACTIVE_CLAIMS // Claim-based payrun open
+  COMPLETED // All paid/claimed
+  FAILED // Execution failed
+  CLOSED // Manually closed
+}
+
+enum PayrunMode {
+  BATCH // Admin-initiated push payroll
+  CLAIMS // Employee-initiated pull claims
+}
+
+model Payrun {
+  id          String @id @default(cuid())
+  orgId       String
+  payrunIdHex String @unique // 32 bytes hex - matches on-chain payrun_id
+
+  // Period
+  periodStart DateTime?
+  periodEnd   DateTime?
+
+  // State machine
+  status PayrunStatus @default(DRAFT)
+  mode   PayrunMode   @default(BATCH)
+
+  // Merkle tree (for claims mode or audit)
+  merkleRootHex String? // 32 bytes hex
+
+  // Counts
+  totalPayslips Int @default(0)
+  paidCount     Int @default(0)
+  claimedCount  Int @default(0)
+  failedCount   Int @default(0)
+
+  // Total amounts (stored as strings for precision)
+  totalAmount String? // Sum of all payslip amounts
+  paidAmount  String? // Sum of paid amounts
+
+  // Deadlines
+  claimDeadline DateTime?
+
+  // Audit
+  createdBy  String // Wallet that created this payrun
+  executedBy String? // Wallet that executed (for batch mode)
+  executedAt DateTime?
+  closedAt   DateTime?
+
+  // On-chain reference
+  onChainTxSig String? // Transaction signature for set_payrun
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Approval workflow
+  requiresApproval Boolean   @default(false)
+  approvedBy       String?
+  approvedAt       DateTime?
+  rejectedBy       String?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+
+  // Relations
+  org              Org               @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payslips         Payslip[]
+  ledgerEntries    LedgerEntry[]
+  approvalRequests ApprovalRequest[]
+
+  @@index([orgId, status])
+  @@index([orgId, createdAt])
+}
+
+// =============================================================================
+// Payslips
+// =============================================================================
+
+enum PayslipStatus {
+  PENDING // Awaiting payout
+  PROCESSING // Payout in progress
+  PAID // Successfully paid (batch mode)
+  CLAIMED // Successfully claimed (claims mode)
+  FAILED // Payout failed
+  CANCELLED // Cancelled before payout
+}
+
+model Payslip {
+  id       String @id @default(cuid())
+  payrunId String
+  workerId String
+
+  // Amount (stored privately)
+  amount   String // Raw amount string
+  currency String @default("USDC")
+
+  // Cryptographic commitments (for ZK proofs)
+  amountCommitmentHex   String? // sha256(amount) - 32 bytes hex
+  salaryCommitmentHex   String? // For merkle leaf
+  ciphertextHashHex     String? // sha256(encrypted_amount)
+  employeeCommitmentHex String? // sha256(employee_secret)
+  nullifierHex          String? // For claim verification
+
+  // Encrypted amount for Inco transfer
+  encryptedAmountB64 String?
+
+  // Payout tracking
+  status      PayslipStatus @default(PENDING)
+  payoutTxSig String? // Transaction signature
+  paidAt      DateTime?
+
+  // For claims mode
+  claimToken          String?   @unique // Unguessable token (legacy)
+  claimTokenExpiresAt DateTime?
+  // Relations to claim tokens - will be added later
+
+  // Relations to claim tokens
+  claimTokens ClaimToken[]
+  claimedAt   DateTime?
+
+  // Audit
+  notes String? // Bonus reason, memo, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  payrun Payrun @relation(fields: [payrunId], references: [id], onDelete: Cascade)
+  worker Worker @relation(fields: [workerId], references: [id])
+
+  @@index([payrunId, status])
+  @@index([workerId])
+  @@index([claimToken])
+}
+
+// =============================================================================
+// Paylinks (Standalone - Not tied to payruns)
+// =============================================================================
+
+enum PaylinkStatus {
+  ACTIVE
+  CLAIMED
+  EXPIRED
+  CANCELLED
+}
+
+model Paylink {
+  id           String  @id @default(cuid())
+  orgId        String
+  paylinkIdHex String? // 32 bytes hex - used as payrun_id on-chain
+
+  // Amount
+  amount   String
+  currency String @default("USDC")
+
+  // Recipient (optional - can be claimed by anyone with the link)
+  recipientWallet      String?
+  recipientConfAccount String?
+
+  // Cryptographic data
+  salaryCommitmentHex String?
+  ciphertextHashHex   String?
+  encryptedAmountB64  String?
+  nullifierHex        String?
+  merkleRootHex       String? // Single-leaf tree for consistency
+
+  // Claim token
+  tokenHash       String  @unique @map("token") // sha256(token)
+  tokenCiphertext String? // Encrypted token for admin re-share
+
+  // Relations to claim tokens
+  claimTokens ClaimToken[]
+
+  // Status
+  status       PaylinkStatus @default(ACTIVE)
+  expiresAt    DateTime
+  onChainTxSig String? // Transaction signature for set_payrun
+
+  // Tracking
+  claimedBy   String? // Wallet that claimed
+  claimedAt   DateTime?
+  payoutTxSig String?
+
+  // Metadata
+  memo      String?
+  createdBy String // Wallet that created
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status])
+  @@index([tokenHash])
+}
+
+// =============================================================================
+// Ledger (Internal Accounting)
+// =============================================================================
+
+enum LedgerEntryType {
+  TREASURY_FUNDING // Funds added to treasury
+  PAYROLL_ACCRUAL // Payrun created (liability)
+  PAYOUT // Individual payout executed
+  CLAIM // Employee claimed
+  REVERSAL // Failed payout reversed
+  FEE // Platform/network fees
+  ADJUSTMENT // Manual adjustment
+}
+
+model LedgerEntry {
+  id        String  @id @default(cuid())
+  orgId     String
+  payrunId  String?
+  payslipId String?
+  paylinkId String?
+
+  type LedgerEntryType
+
+  // Amount (positive = debit, negative = credit)
+  amount   String
+  currency String @default("USDC")
+
+  // Reference
+  txSig     String? // On-chain transaction signature
+  reference String? // External reference ID
+
+  description String?
+  metadata    String? // JSON blob
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  org    Org     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payrun Payrun? @relation(fields: [payrunId], references: [id])
+
+  @@index([orgId, createdAt])
+  @@index([payrunId])
+  @@index([type])
+}
+
+// =============================================================================
+// Audit Log
+// =============================================================================
+
+model AuditLog {
+  id    String @id @default(cuid())
+  orgId String
+
+  actorWallet String // Who performed the action
+  action      String // e.g., "CREATE_PAYRUN", "EXECUTE_PAYRUN", "ADD_WORKER"
+
+  // Target entity
+  entityType String? // e.g., "Payrun", "Worker", "Paylink"
+  entityId   String?
+
+  // Details
+  metadata  String? // JSON blob with action details
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
+  @@index([actorWallet])
+  @@index([action])
+}
+
+// =============================================================================
+// Authentication Sessions
+// =============================================================================
+
+model Session {
+  id        String   @id @default(cuid())
+  wallet    String // User's wallet pubkey (base58)
+  jwtToken  String   @unique // JWT token
+  expiresAt DateTime // Token expiry
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([wallet])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// SIWS Nonces
+// =============================================================================
+
+model SiwsNonce {
+  id        String    @id @default(cuid())
+  nonce     String    @unique
+  wallet    String
+  domain    String
+  uri       String
+  issuedAt  DateTime
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([wallet])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// Claim Tokens
+// =============================================================================
+
+model ClaimToken {
+  id        String  @id @default(cuid())
+  tokenHash String  @unique // sha256(token) - never stores the actual token
+  payrunId  String // Payrun this token belongs to
+  payslipId String? // Optional: if token is for a specific payslip
+  paylinkId String? // Optional: if token is for a paylink
+
+  // Identity binding (for privacy-preserving claims)
+  expectedEmail String? // Email that can claim this token (verified via Google OAuth)
+
+  // Proof generation data (stored encrypted, used at claim time)
+  employeeSecretEnc String? // Encrypted employee_secret for ZK proof generation
+  merklePathJson    String? // JSON array of merkle path siblings
+  pathIndicesJson   String? // JSON array of path indices (booleans)
+  leafIndex         Int? // Position in merkle tree
+
+  // Commitment data for proof
+  salaryCommitmentHex   String?
+  ciphertextHashHex     String?
+  employeeCommitmentHex String?
+  nullifierHex          String?
+  encryptedAmountB64    String?
+
+  // Legacy field - will be removed after migration
+  claimPackageJson String?
+
+  // Token metadata
+  issuedAt  DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  // Relations
+  payslip Payslip? @relation(fields: [payslipId], references: [id])
+  paylink Paylink? @relation(fields: [paylinkId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tokenHash])
+  @@index([expiresAt])
+  @@index([payrunId])
+  @@index([expectedEmail])
+}
+
+// =============================================================================
+// Idempotency Keys
+// =============================================================================
+
+enum IdempotencyStatus {
+  STARTED
+  COMPLETED
+  FAILED
+}
+
+model IdempotencyKey {
+  id String @id @default(cuid())
+
+  // Scope: orgId + action + key
+  scope String // e.g., "org_xxx:EXECUTE_PAYRUN"
+  key   String // Unique key within scope
+
+  status IdempotencyStatus @default(STARTED)
+
+  // Response (stored for replay)
+  response String? // JSON blob
+  error    String?
+
+  createdAt DateTime @default(now())
+  expiresAt DateTime // Auto-cleanup after expiry
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// Squads Multi-Sig Proposals
+// =============================================================================
+
+enum ProposalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXECUTED
+  CANCELLED
+}
+
+enum ProposalType {
+  PAYRUN_EXECUTE
+  TREASURY_TRANSFER
+  CONFIG_CHANGE
+}
+
+model MultisigProposal {
+  id    String @id @default(cuid())
+  orgId String
+
+  transactionIndex BigInt
+  type             ProposalType
+  status           ProposalStatus @default(PENDING)
+
+  payrunId String?
+
+  title       String
+  description String?
+
+  approvals  String[]
+  rejections String[]
+
+  proposedBy String
+  proposedAt DateTime  @default(now())
+  executedBy String?
+  executedAt DateTime?
+
+  txSignature String?
+  metadata    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, transactionIndex])
+  @@index([orgId, status])
+  @@index([payrunId])
+}
+
+// =============================================================================
+// Approval Requests
+// =============================================================================
+
+enum ApprovalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ApprovalRequest {
+  id       String @id @default(cuid())
+  payrunId String
+
+  status ApprovalRequestStatus @default(PENDING)
+
+  requestedBy String
+  requestedAt DateTime @default(now())
+
+  respondedBy String?
+  respondedAt DateTime?
+
+  comments String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payrun Payrun @relation(fields: [payrunId], references: [id], onDelete: Cascade)
+
+  @@index([payrunId])
+  @@index([status])
+}
+
+// =============================================================================
+// Recurring Payrun Schedules
+// =============================================================================
+
+enum ScheduleFrequency {
+  WEEKLY
+  BIWEEKLY
+  SEMIMONTHLY
+  MONTHLY
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+model RecurringSchedule {
+  id    String @id @default(cuid())
+  orgId String
+
+  name      String
+  frequency ScheduleFrequency
+  status    ScheduleStatus    @default(ACTIVE)
+
+  dayOfWeek        Int?
+  dayOfMonth       Int?
+  secondDayOfMonth Int?
+
+  workerIds String[]
+
+  autoApprove      Boolean @default(false)
+  requiresApproval Boolean @default(true)
+
+  claimDeadlineDays Int @default(30)
+
+  nextRunAt    DateTime?
+  lastRunAt    DateTime?
+  lastPayrunId String?
+
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Org @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status])
+  @@index([nextRunAt])
+}
+
+// =============================================================================
+// Payment Requests (Recipient-initiated P2P payments)
+// =============================================================================
+
+enum PaymentRequestStatus {
+  PENDING // Awaiting payment
+  PAID // Successfully paid
+  EXPIRED // Past expiry date
+  CANCELLED // Recipient cancelled
+}
+
+model PaymentRequest {
+  id String @id @default(cuid())
+
+  // Recipient info (who's requesting payment)
+  recipientWallet      String // Recipient's wallet pubkey (base58)
+  recipientConfAccount String? // Recipient's Inco confidential account
+  recipientEmail       String? // Optional for notifications
+
+  // Request details
+  amount   String // Requested amount (USDC, 6 decimals)
+  currency String @default("USDC")
+  memo     String? // "Hackathon prize", "Freelance work", etc.
+
+  // Optional org link (for contractor → org requests)
+  orgId String? // If tied to an org
+
+  // Status
+  status PaymentRequestStatus @default(PENDING)
+
+  // Privacy/ZK fields (populated when paid)
+  salaryCommitmentHex String?
+  ciphertextHashHex   String?
+  encryptedAmountB64  String?
+  nullifierHex        String?
+  merkleRootHex       String?
+
+  // Payer info (populated when paid)
+  paidBy      String? // Payer wallet
+  paidAt      DateTime?
+  payoutTxSig String?
+
+  // Metadata
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([recipientWallet])
+  @@index([status])
+  @@index([orgId])
+}
+
+// =============================================================================
+// Legacy Tables (Preserved for backwards compatibility)
+// These mirror the original MVP schema to keep legacy endpoints functional
+// =============================================================================
+
+model LegacyPayrun {
+  id             String @id
+  orgId          String @map("org_id")
+  merkleRoot     String @map("merkle_root")
+  totalEmployees Int    @map("total_employees")
+  claimDeadline  Int    @map("claim_deadline")
+  createdAt      Int    @map("created_at")
+
+  @@map("payruns")
+}
+
+model LegacyClaimPackage {
+  id                 Int    @id @default(autoincrement())
+  orgId              String @map("org_id")
+  payrunId           String @map("payrun_id")
+  leafIndex          Int    @map("leaf_index")
+  employeeSecret     String @map("employee_secret")
+  employeeCommitment String @map("employee_commitment")
+  salaryCommitment   String @map("salary_commitment")
+  ciphertextHash     String @map("ciphertext_hash")
+  nullifier          String
+  merkleRoot         String @map("merkle_root")
+  merklePath         String @map("merkle_path")
+  pathIndices        String @map("path_indices")
+  employeeWallet     String @map("employee_wallet")
+  amount             String
+  encryptedAmount    String @map("encrypted_amount")
+
+  @@unique([payrunId, employeeWallet], map: "claim_packages_payrun_wallet")
+  @@index([employeeWallet], map: "idx_claim_packages_wallet")
+  @@index([payrunId], map: "idx_claim_packages_payrun")
+  @@map("claim_packages")
+}

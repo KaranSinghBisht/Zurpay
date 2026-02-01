@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@inco/solana-sdk": "^0.0.2",
+    "@prisma/adapter-pg": "^7.3.0",
+    "@prisma/client": "^7.3.0",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",
@@ -27,6 +29,8 @@
     "jose": "^6.0.11",
     "lucide-react": "^0.562.0",
     "next": "^14.2.35",
+    "pg": "^8.18.0",
+    "prisma": "^7.3.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^3.6.0",

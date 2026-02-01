@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && npm run build --workspace=@zurpay/sdk && cd packages/db && npx prisma generate && cd ../../apps/admin && npm run build && mkdir -p .next/server/chunks && cp ../../packages/db/generated/prisma/*.wasm .next/server/chunks/ && cp ../../packages/db/generated/prisma/runtime/*.js .next/server/chunks/",
+  "buildCommand": "cd ../.. && npm run build --workspace=@zurpay/sdk && cd apps/admin && npx prisma generate && npm run build",
   "installCommand": "cd ../.. && npm install",
   "outputDirectory": ".next"
 }

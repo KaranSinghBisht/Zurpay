@@ -1,29 +1,89 @@
-// Re-export from shared db package
+// Local Prisma client for admin app
+import {
+  PrismaClient,
+  MemberRole,
+  WorkerType,
+  WorkerStatus,
+  PayrunStatus,
+  PayrunMode,
+  PayslipStatus,
+  PaylinkStatus,
+} from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+  pool: Pool | undefined;
+};
+
+function createPrismaClient(): PrismaClient {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
+  });
+
+  globalForPrisma.pool = pool;
+
+  const adapter = new PrismaPg(pool);
+
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    adapter,
+  });
+}
+
+function getPrisma(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient();
+  }
+  return globalForPrisma.prisma;
+}
+
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrisma();
+    const value = client[prop as keyof PrismaClient];
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
+  },
+});
+
+// Re-export enums
 export {
-    prisma,
-    MemberRole,
-    WorkerType,
-    WorkerStatus,
-    PayrunStatus,
-    PayrunMode,
-    PayslipStatus,
-    PaylinkStatus,
-} from '@zurpay/db';
+  MemberRole,
+  WorkerType,
+  WorkerStatus,
+  PayrunStatus,
+  PayrunMode,
+  PayslipStatus,
+  PaylinkStatus,
+};
 
 // Type exports for TypeScript consumers
 export type {
-    Org,
-    OrgMember,
-    Worker,
-    CompPlan,
-    Payrun,
-    Payslip,
-    Paylink,
-    ClaimToken,
-    AuditLog,
-    Session,
-    SiwsNonce,
-    ApprovalRequest,
-    RecurringSchedule,
-    MultisigProposal,
-} from '@zurpay/db';
+  Org,
+  OrgMember,
+  Worker,
+  CompPlan,
+  Payrun,
+  Payslip,
+  Paylink,
+  ClaimToken,
+  AuditLog,
+  Session,
+  SiwsNonce,
+  ApprovalRequest,
+  RecurringSchedule,
+  MultisigProposal,
+} from '@prisma/client';
