@@ -53,7 +53,8 @@ id.json
 # Misc
 *.tsbuildinfo
 
-# Prisma generated engine binaries (large files)
+# Prisma generated client (generated at build time)
+packages/db/generated/
 *.dylib.node
 *.wasm
 **/prisma/runtime/
@@ -61,3 +62,4 @@ id.json
 # SQLite databases
 *.db
 *.sqlite
+.vercel

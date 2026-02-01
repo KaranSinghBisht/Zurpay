@@ -4,10 +4,11 @@ const path = require('path');
 const nextConfig = {
   transpilePackages: ['@zurpay/sdk', '@zurpay/db'],
 
-  outputFileTracingRoot: path.join(__dirname, '../../'),
-
-  outputFileTracingIncludes: {
-    '/api/**/*': ['../../packages/db/src/generated/**/*'],
+  experimental: {
+    outputFileTracingRoot: path.join(__dirname, '../../'),
+    outputFileTracingIncludes: {
+      '/api/**/*': ['../../packages/db/generated/prisma/**/*'],
+    },
   },
 
   async headers() {
