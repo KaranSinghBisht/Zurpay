@@ -2,15 +2,12 @@
 // This schema implements the product layer on top of the hackathon MVP
 
 generator client {
-  provider        = "prisma-client-js"
-  output          = "../generated/prisma"
-  engineType      = "client"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // =============================================================================
