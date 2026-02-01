@@ -77,16 +77,26 @@ export async function POST(
 
     const org = await prisma.org.findUnique({ where: { id: orgId }, select: { name: true } });
 
+    let emailSent = false;
+    let emailError = null;
+
     if (process.env.RESEND_API_KEY) {
       try {
+        console.log('[Invite] Sending email to:', data.email);
+        console.log('[Invite] RESEND_API_KEY present:', !!process.env.RESEND_API_KEY);
         await sendInviteEmail({
           to: data.email,
           orgName: org?.name || 'Your Organization',
           inviteToken,
         });
-      } catch (emailError) {
-        console.error('Failed to send invite email:', emailError);
+        emailSent = true;
+        console.log('[Invite] Email sent successfully');
+      } catch (err) {
+        console.error('[Invite] Failed to send invite email:', err);
+        emailError = err instanceof Error ? err.message : 'Unknown error';
       }
+    } else {
+      console.log('[Invite] RESEND_API_KEY not set, skipping email');
     }
 
     return NextResponse.json(
@@ -94,7 +104,8 @@ export async function POST(
         worker,
         inviteUrl,
         expiresAt,
-        emailSent: !!process.env.RESEND_API_KEY,
+        emailSent,
+        emailError,
       },
       { status: 201 }
     );
