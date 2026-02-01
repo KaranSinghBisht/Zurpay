@@ -126,10 +126,11 @@ pub fn handler<'info>(
         ZurpayError::CiphertextMismatch
     );
 
-    // DEMO MODE: Skip ZK verification for hackathon demo
-    // TODO: Re-enable for production
-    msg!("DEMO MODE: Skipping ZK proof verification");
-    let _ = (&proof_bytes, &public_inputs);
+    verify_zk_proof(
+        &ctx.accounts.zk_verifier_program,
+        &proof_bytes,
+        &public_inputs,
+    )?;
 
     execute_confidential_transfer(
         &ctx.accounts.inco_program.to_account_info(),
