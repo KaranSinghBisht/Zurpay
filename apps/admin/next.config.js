@@ -1,6 +1,14 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@zurpay/sdk', '@zurpay/db'],
+
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+
+  outputFileTracingIncludes: {
+    '/api/**/*': ['../../packages/db/src/generated/**/*'],
+  },
 
   async headers() {
     return [
