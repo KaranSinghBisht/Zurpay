@@ -1,0 +1,32 @@
+<svg width="1200" height="400" viewBox="0 0 1200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0f"/>
+      <stop offset="50%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#0a0a0f"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#34d399"/>
+      <stop offset="100%" style="stop-color:#10b981"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="400" fill="url(#bg)" rx="16"/>
+  <circle cx="600" cy="200" r="200" fill="url(#glow)"/>
+  <g transform="translate(540, 100)">
+    <path d="M60 20L120 40V100C120 140 90 170 60 180C30 170 0 140 0 100V40L60 20Z" stroke="#10b981" stroke-width="4" fill="none" opacity="0.3"/>
+    <path d="M60 40L100 55V95C100 125 80 145 60 155C40 145 20 125 20 95V55L60 40Z" stroke="#34d399" stroke-width="3" fill="none" opacity="0.5"/>
+    <circle cx="60" cy="90" r="20" stroke="#6ee7b7" stroke-width="3" fill="none"/>
+    <circle cx="60" cy="90" r="8" fill="#34d399"/>
+  </g>
+  <text x="600" y="300" text-anchor="middle" font-family="Space Grotesk, system-ui, sans-serif" font-size="48" font-weight="700" fill="url(#textGrad)">
+    Confidential Payroll on Solana
+  </text>
+  <text x="600" y="345" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="20" fill="#9ca3af">
+    Amounts encrypted by default. Claims gated by ZK proofs.
+  </text>
+</svg>
