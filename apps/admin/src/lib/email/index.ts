@@ -13,7 +13,7 @@ function getResend(): Resend {
   return resendClient;
 }
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Zurpay <noreply@zurpay.com>';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Zurpay <onboarding@resend.dev>';
 const EMPLOYEE_APP_URL = process.env.NEXT_PUBLIC_EMPLOYEE_APP_URL || 'http://localhost:3002';
 
 export async function sendInviteEmail(params: {
