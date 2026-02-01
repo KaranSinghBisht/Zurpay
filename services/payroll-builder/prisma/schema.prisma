@@ -679,6 +679,10 @@ model RecurringSchedule {
   lastRunAt       DateTime?
   lastPayrunId    String?
   
+  // On-chain schedule reference (32 bytes hex)
+  // When set, the keeper will execute this schedule on-chain permissionlessly
+  onChainScheduleId String?
+  
   createdBy       String
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt

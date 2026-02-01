@@ -7,3 +7,4 @@ export * from './transport';
 export * from './decrypt';
 export * from './treasury';
 export * from './inco-token';
+export * from './schedule';

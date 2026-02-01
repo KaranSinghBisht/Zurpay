@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
+import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import {
   buildPayrunFromCsv,
   buildPayrunV2,
@@ -39,6 +40,7 @@ import { startCleanupScheduler, stopCleanupScheduler } from './services/cleanup'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { verifyClaimTransaction } from './claim-verifier';
 import { notifyDueSchedules, checkAndNotifySchedule } from './services/schedule-notifier';
+import { startScheduleKeeper, stopScheduleKeeper } from './services/schedule-keeper';
 
 // =============================================================================
 // SECURITY: Environment variable validation
@@ -401,6 +403,53 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 
+function initializeScheduleKeeper() {
+  const ENABLE_SCHEDULE_KEEPER = process.env.ENABLE_SCHEDULE_KEEPER === 'true';
+  if (!ENABLE_SCHEDULE_KEEPER) {
+    logger.info('Schedule keeper disabled (set ENABLE_SCHEDULE_KEEPER=true to enable)');
+    return;
+  }
+
+  const executorKeyBase58 = process.env.SCHEDULE_EXECUTOR_KEY;
+  if (!executorKeyBase58) {
+    logger.warn('SCHEDULE_EXECUTOR_KEY not set, schedule keeper disabled');
+    return;
+  }
+
+  const rpcUrl = process.env.HELIUS_API_KEY
+    ? `https://devnet.helius-rpc.com/?api-key=${process.env.HELIUS_API_KEY}`
+    : process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+
+  const programIdStr =
+    process.env.ZURPAY_PROGRAM_ID || 'Cf9tReQuvS6cb4awYPCVozQnCWYdqia62yRShJs2URy9';
+
+  try {
+    const executorKeypair = Keypair.fromSecretKey(Buffer.from(JSON.parse(executorKeyBase58)));
+    const connection = new Connection(rpcUrl, 'confirmed');
+    const programId = new PublicKey(programIdStr);
+
+    const CHECK_INTERVAL = parseInt(process.env.SCHEDULE_CHECK_INTERVAL_MS || '60000', 10);
+
+    startScheduleKeeper({
+      connection,
+      executorKeypair,
+      programId,
+      checkIntervalMs: CHECK_INTERVAL,
+    });
+
+    logger.info(
+      {
+        executor: executorKeypair.publicKey.toBase58(),
+        programId: programIdStr,
+        checkIntervalMs: CHECK_INTERVAL,
+      },
+      'Schedule keeper initialized'
+    );
+  } catch (err) {
+    logger.error({ error: err }, 'Failed to initialize schedule keeper');
+  }
+}
+
 app.listen(PORT, () => {
   logger.info(
     { port: PORT, legacyEndpoints: ENABLE_LEGACY_ENDPOINTS },
@@ -409,10 +458,13 @@ app.listen(PORT, () => {
 
   const CLEANUP_INTERVAL = parseInt(process.env.CLEANUP_INTERVAL_MS || '3600000', 10);
   startCleanupScheduler(CLEANUP_INTERVAL);
+
+  initializeScheduleKeeper();
 });
 
 process.on('SIGTERM', async () => {
   stopCleanupScheduler();
+  stopScheduleKeeper();
   await prisma.$disconnect();
   process.exit(0);
 });

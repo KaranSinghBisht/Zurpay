@@ -5,6 +5,7 @@ import { AuthenticatedRequest, requireWallet, requireOrg } from '../middleware/a
 import { createAuditLog, AuditActions } from '../services/audit';
 import { MemberRole, ScheduleFrequency, ScheduleStatus, PayrunStatus } from '../generated/prisma';
 import crypto from 'crypto';
+import { bytesToHex } from '@zurpay/sdk';
 
 const router = Router();
 
@@ -301,6 +302,117 @@ router.delete(
     } catch (error) {
       console.error('Delete schedule error:', error);
       return res.status(500).json({ error: 'Failed to delete schedule' });
+    }
+  }
+);
+
+const EnableOnChainSchema = z.object({
+  onChainScheduleId: z.string().length(64).optional(),
+});
+
+router.post(
+  '/:orgId/schedules/:scheduleId/enable-onchain',
+  requireWallet,
+  requireOrg([MemberRole.OWNER, MemberRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { orgId, scheduleId } = req.params;
+      const wallet = req.wallet!;
+      const data = EnableOnChainSchema.parse(req.body);
+
+      const schedule = await prisma.recurringSchedule.findFirst({
+        where: { id: scheduleId, orgId },
+      });
+
+      if (!schedule) {
+        return res.status(404).json({ error: 'Schedule not found' });
+      }
+
+      if (schedule.onChainScheduleId) {
+        return res.status(400).json({
+          error: 'Schedule already has on-chain automation enabled',
+          onChainScheduleId: schedule.onChainScheduleId,
+        });
+      }
+
+      const onChainScheduleId = data.onChainScheduleId || bytesToHex(crypto.randomBytes(32));
+
+      const updated = await prisma.recurringSchedule.update({
+        where: { id: scheduleId },
+        data: { onChainScheduleId },
+      });
+
+      await createAuditLog({
+        orgId,
+        actorWallet: wallet,
+        action: AuditActions.UPDATE_SCHEDULE,
+        entityType: 'RecurringSchedule',
+        entityId: scheduleId,
+        metadata: { action: 'enable_onchain', onChainScheduleId },
+      });
+
+      return res.json({
+        message: 'On-chain automation enabled',
+        schedule: updated,
+        onChainScheduleId,
+        nextStep:
+          'Create the on-chain schedule account using the SDK createSchedule function with this onChainScheduleId',
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      console.error('Enable on-chain schedule error:', error);
+      return res.status(500).json({ error: 'Failed to enable on-chain automation' });
+    }
+  }
+);
+
+router.post(
+  '/:orgId/schedules/:scheduleId/disable-onchain',
+  requireWallet,
+  requireOrg([MemberRole.OWNER, MemberRole.ADMIN]),
+  async (req: AuthenticatedRequest, res) => {
+    try {
+      const { orgId, scheduleId } = req.params;
+      const wallet = req.wallet!;
+
+      const schedule = await prisma.recurringSchedule.findFirst({
+        where: { id: scheduleId, orgId },
+      });
+
+      if (!schedule) {
+        return res.status(404).json({ error: 'Schedule not found' });
+      }
+
+      if (!schedule.onChainScheduleId) {
+        return res
+          .status(400)
+          .json({ error: 'Schedule does not have on-chain automation enabled' });
+      }
+
+      const updated = await prisma.recurringSchedule.update({
+        where: { id: scheduleId },
+        data: { onChainScheduleId: null },
+      });
+
+      await createAuditLog({
+        orgId,
+        actorWallet: wallet,
+        action: AuditActions.UPDATE_SCHEDULE,
+        entityType: 'RecurringSchedule',
+        entityId: scheduleId,
+        metadata: { action: 'disable_onchain' },
+      });
+
+      return res.json({
+        message: 'On-chain automation disabled',
+        schedule: updated,
+        note: 'The on-chain schedule account will remain on-chain but the keeper will no longer execute it',
+      });
+    } catch (error) {
+      console.error('Disable on-chain schedule error:', error);
+      return res.status(500).json({ error: 'Failed to disable on-chain automation' });
     }
   }
 );

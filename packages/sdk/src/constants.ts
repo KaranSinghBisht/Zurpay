@@ -53,6 +53,7 @@ export const PDA_SEEDS = {
   NULLIFIER: Buffer.from('null'),
   TREASURY: Buffer.from('treasury'),
   EMPLOYEE_CONF: Buffer.from('employee_conf'),
+  SCHEDULE: Buffer.from('schedule'),
 } as const;
 
 export const DOMAIN_SEPARATOR = Buffer.from('zurpay-v1');
