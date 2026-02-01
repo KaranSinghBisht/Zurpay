@@ -1,4 +1,5 @@
 const path = require('path');
+const { PrismaPlugin } = require('@prisma/nextjs-monorepo-workaround-plugin');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -6,9 +7,13 @@ const nextConfig = {
 
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../../'),
-    outputFileTracingIncludes: {
-      '/api/**/*': ['../../packages/db/generated/prisma/**/*'],
-    },
+  },
+
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.plugins = [...config.plugins, new PrismaPlugin()];
+    }
+    return config;
   },
 
   async headers() {
