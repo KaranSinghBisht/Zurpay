@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Zurpay',
   tagline: 'Confidential payroll on Solana — amounts encrypted, claims gated by ZK',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
 
   future: {
     v4: true,
@@ -51,7 +51,7 @@ const config: Config = {
       title: 'Zurpay',
       logo: {
         alt: 'Zurpay Logo',
-        src: 'img/logo.svg',
+        src: 'img/logo.png',
       },
       items: [
         {

@@ -11,12 +11,12 @@ import {
   Menu,
   X,
   Search,
-  ShieldCheck,
   Link as LinkIcon,
   CheckCircle,
   Calendar,
   FileText,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SolanaProviders } from '../../components/SolanaProviders';
@@ -90,8 +90,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   className="w-64 glass border-r border-white/5 p-6 flex flex-col gap-8 z-50 lg:relative fixed h-full"
                 >
                   <Link href="/" className="flex items-center gap-2 mb-2 group" prefetch={true}>
-                    <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-                      <ShieldCheck className="text-white" size={24} />
+                    <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
+                      <Image
+                        src="/logo.png"
+                        alt="Zurpay"
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                     <h1 className="text-2xl font-display font-bold text-white">Zurpay</h1>
                   </Link>

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { LaptopMockup } from '../../components/LaptopMockup';
 import { FeaturesGrid } from '../../components/FeaturesGrid';
 import { HowItWorks } from '../../components/HowItWorks';
@@ -12,8 +13,14 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-zinc-800/50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center font-bold text-black">
-              Z
+            <div className="w-8 h-8 rounded-lg overflow-hidden">
+              <Image
+                src="/logo.png"
+                alt="Zurpay"
+                width={32}
+                height={32}
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="text-xl font-bold">Zurpay</span>
           </div>
@@ -31,9 +38,7 @@ export default function LandingPage() {
               GitHub
             </a>
           </div>
-          <SmartLaunchButton className="btn-primary">
-            Launch App →
-          </SmartLaunchButton>
+          <SmartLaunchButton className="btn-primary">Launch App →</SmartLaunchButton>
         </div>
       </nav>
 
@@ -89,8 +94,14 @@ export default function LandingPage() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded bg-emerald-500 flex items-center justify-center text-[8px] font-bold text-black">
-                  Z
+                <div className="w-5 h-5 rounded overflow-hidden">
+                  <Image
+                    src="/logo.png"
+                    alt="Zurpay"
+                    width={20}
+                    height={20}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <span className="text-xs font-medium text-zinc-300">Zurpay</span>
               </div>
@@ -198,8 +209,14 @@ export default function LandingPage() {
       <footer className="py-12 px-6 border-t border-zinc-900">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-emerald-500 flex items-center justify-center font-bold text-black text-sm">
-              Z
+            <div className="w-6 h-6 rounded overflow-hidden">
+              <Image
+                src="/logo.png"
+                alt="Zurpay"
+                width={24}
+                height={24}
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="font-semibold">Zurpay</span>
           </div>
