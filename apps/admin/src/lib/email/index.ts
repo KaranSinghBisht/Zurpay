@@ -1,6 +1,17 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resendClient: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resendClient) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is required for email functionality');
+    }
+    resendClient = new Resend(apiKey);
+  }
+  return resendClient;
+}
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Zurpay <noreply@zurpay.com>';
 const EMPLOYEE_APP_URL = process.env.NEXT_PUBLIC_EMPLOYEE_APP_URL || 'http://localhost:3002';
@@ -14,7 +25,7 @@ export async function sendInviteEmail(params: {
   const { to, orgName, inviteToken, inviterName } = params;
   const inviteUrl = `${EMPLOYEE_APP_URL}/invite/${inviteToken}`;
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `You've been invited to ${orgName} on Zurpay`,
@@ -93,7 +104,7 @@ export async function sendClaimEmail(params: {
       ? `${(Number(amount) / 1_000_000).toLocaleString('en-US', { style: 'currency', currency: 'USD' })} ${currency}`
       : 'your payment';
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: `You have a payment to claim from ${orgName}`,
