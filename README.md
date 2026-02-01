@@ -4,7 +4,7 @@
 
 Built for the Solana Privacy Hackathon 2026.
 
-> 🎬 Demo video: coming soon
+> 🎬 [Watch the Demo Video](https://github.com/KaranSinghBisht/Zurpay)
 
 ## The Problem
 

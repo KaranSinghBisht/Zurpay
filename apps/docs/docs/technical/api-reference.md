@@ -11,7 +11,7 @@ The Payroll Builder Service exposes REST APIs for payrun and claim management.
 
 ```
 Development: http://localhost:3001
-Production: https://api.zurpay.xyz
+Production: https://pleasing-cooperation-production-1f28.up.railway.app
 ```
 
 ## Authentication

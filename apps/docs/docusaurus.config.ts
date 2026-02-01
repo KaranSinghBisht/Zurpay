@@ -2,8 +2,8 @@ import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
-const ADMIN_URL = process.env.ADMIN_URL || 'http://localhost:3000';
-const EMPLOYEE_URL = process.env.EMPLOYEE_URL || 'http://localhost:3002';
+const ADMIN_URL = process.env.ADMIN_URL || 'https://zurpay-admin.vercel.app';
+const EMPLOYEE_URL = process.env.EMPLOYEE_URL || 'https://zurpay-employee.vercel.app';
 
 const config: Config = {
   title: 'Zurpay',
@@ -17,8 +17,8 @@ const config: Config = {
   url: 'https://docs.zurpay.xyz',
   baseUrl: '/',
 
-  organizationName: 'zurpay',
-  projectName: 'zurpay',
+  organizationName: 'KaranSinghBisht',
+  projectName: 'Zurpay',
 
   onBrokenLinks: 'throw',
 
@@ -34,7 +34,7 @@ const config: Config = {
         docs: {
           routeBasePath: '/', // Docs at root
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/zurpay/zurpay/tree/main/apps/docs/',
+          editUrl: 'https://github.com/KaranSinghBisht/Zurpay/tree/main/apps/docs/',
         },
         blog: false, // Disable blog
         theme: {
@@ -74,7 +74,7 @@ const config: Config = {
           position: 'right',
         },
         {
-          href: 'https://github.com/zurpay/zurpay',
+          href: 'https://github.com/KaranSinghBisht/Zurpay',
           label: 'GitHub',
           position: 'right',
         },
@@ -122,7 +122,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/zurpay/zurpay',
+              href: 'https://github.com/KaranSinghBisht/Zurpay',
             },
             {
               label: 'Twitter',
