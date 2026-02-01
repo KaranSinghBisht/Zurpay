@@ -91,4 +91,34 @@ pub mod zurpay_payroll {
     pub fn init_employee_conf(ctx: Context<InitEmployeeConf>) -> Result<()> {
         instructions::init_employee_conf::handler(ctx)
     }
+
+    pub fn create_schedule(
+        ctx: Context<CreateSchedule>,
+        schedule_id: [u8; 32],
+        frequency: state::ScheduleFrequency,
+        first_execution: i64,
+        total_employees: u32,
+        claim_window_days: u8,
+    ) -> Result<()> {
+        instructions::create_schedule::handler(
+            ctx,
+            schedule_id,
+            frequency,
+            first_execution,
+            total_employees,
+            claim_window_days,
+        )
+    }
+
+    pub fn execute_schedule(ctx: Context<ExecuteSchedule>, merkle_root: [u8; 32]) -> Result<()> {
+        instructions::execute_schedule::handler(ctx, merkle_root)
+    }
+
+    pub fn pause_schedule(ctx: Context<PauseSchedule>) -> Result<()> {
+        instructions::pause_schedule::handler(ctx)
+    }
+
+    pub fn resume_schedule(ctx: Context<ResumeSchedule>, next_execution: i64) -> Result<()> {
+        instructions::resume_schedule::handler(ctx, next_execution)
+    }
 }

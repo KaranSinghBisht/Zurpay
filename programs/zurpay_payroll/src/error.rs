@@ -94,4 +94,22 @@ pub enum ZurpayError {
 
     #[msg("Claimer conf account org_id does not match")]
     ClaimerOrgMismatch,
+
+    #[msg("Schedule execution time must be in the future")]
+    ScheduleExecutionInPast,
+
+    #[msg("Invalid claim window - must be greater than 0")]
+    InvalidClaimWindow,
+
+    #[msg("Schedule does not belong to this organization")]
+    ScheduleOrgMismatch,
+
+    #[msg("Schedule is not active")]
+    ScheduleNotActive,
+
+    #[msg("Schedule is not due for execution yet")]
+    ScheduleNotDue,
+
+    #[msg("Schedule is not paused")]
+    ScheduleNotPaused,
 }
