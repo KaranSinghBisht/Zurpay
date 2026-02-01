@@ -100,26 +100,39 @@ if (process.env.PAYROLL_ENCRYPTION_KEY.length < 32) {
 
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-  : ['http://localhost:3000', 'http://localhost:3002']; // Default: local dev only
+  : ['http://localhost:3000', 'http://localhost:3002'];
+
+const ALLOWED_ORIGIN_PATTERNS = [
+  /^https:\/\/.*\.vercel\.app$/,
+  /^https:\/\/.*\.ngrok-free\.app$/,
+  /^https:\/\/.*\.ngrok\.io$/,
+];
+
+function isOriginAllowed(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+  return ALLOWED_ORIGIN_PATTERNS.some((pattern) => pattern.test(origin));
+}
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (server-to-server, curl, etc.)
     if (!origin) {
       callback(null, true);
       return;
     }
 
-    if (ALLOWED_ORIGINS.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
+      logger.warn({ origin }, 'CORS request from disallowed origin');
       callback(new Error(`CORS: Origin ${origin} not allowed`));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-idempotency-key'],
-  maxAge: 86400, // 24 hours - browsers cache preflight
+  maxAge: 86400,
 };
 
 const app = express();
