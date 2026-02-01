@@ -208,14 +208,14 @@ export class MockProver implements Prover {
       proofBytes[i] = (i * 7 + 13) % 256;
     }
 
-    const publicInputsHashBytes = this.computePublicInputsHashBytes(inputs);
-    const publicInputsBytes = new Uint8Array(publicInputsHashBytes);
+    const publicInputsBytes = this.computePublicInputsField(inputs);
 
     return { proofBytes, publicInputsBytes };
   }
 
-  private computePublicInputsHashBytes(inputs: WitnessInputs): Buffer {
-    // V5 format: 160 bytes preimage (NO ciphertext_hash)
+  private computePublicInputsField(inputs: WitnessInputs): Uint8Array {
+    // V5: SHA256(root || nullifier || payout_hash || org_id || salary_commitment)
+    // Then format as field: [0, hash[1], hash[2], ..., hash[31]]
     const combined = Buffer.concat([
       Buffer.from(inputs.merkle_root),
       Buffer.from(inputs.nullifier),
@@ -223,7 +223,11 @@ export class MockProver implements Prover {
       Buffer.from(inputs.org_id),
       Buffer.from(inputs.salary_commitment),
     ]);
-    return createHash('sha256').update(combined).digest();
+    const hash = createHash('sha256').update(combined).digest();
+    const field = Buffer.alloc(32);
+    field[0] = 0;
+    hash.copy(field, 1, 1, 32);
+    return new Uint8Array(field);
   }
 }
 
