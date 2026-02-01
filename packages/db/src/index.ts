@@ -31,7 +31,7 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-function getPrismaClient(): PrismaClient {
+export function getPrisma(): PrismaClient {
   if (!globalForPrisma.prisma) {
     globalForPrisma.prisma = createPrismaClient();
   }
@@ -40,7 +40,12 @@ function getPrismaClient(): PrismaClient {
 
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop) {
-    return getPrismaClient()[prop as keyof PrismaClient];
+    const client = getPrisma();
+    const value = client[prop as keyof PrismaClient];
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    return value;
   },
 });
 
