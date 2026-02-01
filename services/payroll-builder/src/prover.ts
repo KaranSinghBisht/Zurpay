@@ -96,13 +96,13 @@ export class SunspotCliProver implements Prover {
   }
 
   private computePublicInputsHashBytes(inputs: WitnessInputs): Buffer {
+    // V5 format: 160 bytes preimage (NO ciphertext_hash)
     const combined = Buffer.concat([
       Buffer.from(inputs.merkle_root),
       Buffer.from(inputs.nullifier),
       Buffer.from(inputs.payout_pubkey_hash),
       Buffer.from(inputs.org_id),
       Buffer.from(inputs.salary_commitment),
-      Buffer.from(inputs.ciphertext_hash),
     ]);
     return createHash('sha256').update(combined).digest();
   }
@@ -215,13 +215,13 @@ export class MockProver implements Prover {
   }
 
   private computePublicInputsHashBytes(inputs: WitnessInputs): Buffer {
+    // V5 format: 160 bytes preimage (NO ciphertext_hash)
     const combined = Buffer.concat([
       Buffer.from(inputs.merkle_root),
       Buffer.from(inputs.nullifier),
       Buffer.from(inputs.payout_pubkey_hash),
       Buffer.from(inputs.org_id),
       Buffer.from(inputs.salary_commitment),
-      Buffer.from(inputs.ciphertext_hash),
     ]);
     return createHash('sha256').update(combined).digest();
   }
