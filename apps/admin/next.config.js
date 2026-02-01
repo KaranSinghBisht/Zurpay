@@ -2,10 +2,6 @@
 const nextConfig = {
   transpilePackages: ['@zurpay/sdk', '@zurpay/db'],
 
-  outputFileTracingIncludes: {
-    '/api/**/*': ['./node_modules/.prisma/**/*', '../../packages/db/src/generated/**/*'],
-  },
-
   async headers() {
     return [
       {
