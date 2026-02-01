@@ -170,13 +170,13 @@ export default function WorkersPage() {
                       <div className="font-medium text-white">
                         {worker.email || worker.displayName || '(No email)'}
                       </div>
-                      <div className="text-xs text-zinc-500 font-mono mt-0.5">
+                      <div className="text-xs text-zinc-500 mt-0.5">
                         {worker.wallet ? (
-                          <>
+                          <span className="font-mono">
                             {worker.wallet.slice(0, 6)}...{worker.wallet.slice(-4)}
-                          </>
+                          </span>
                         ) : (
-                          '(No wallet linked)'
+                          <span className="text-zinc-600 italic">Wallet hidden for privacy</span>
                         )}
                       </div>
                       {worker.displayName && worker.displayName !== worker.email && (

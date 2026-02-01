@@ -5,12 +5,6 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useRouter } from 'next/navigation';
 import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { api, Org, OrgStats } from '../../../lib/api';
-import dynamic from 'next/dynamic';
-
-// Dynamic import for SSR compatibility (D3 requires browser)
-const PayrollFlowChart = dynamic(() => import('../../../components/PayrollFlowChart'), {
-  ssr: false,
-});
 
 function formatAmount(amount: string): string {
   const num = BigInt(amount);
@@ -319,26 +313,6 @@ export default function DashboardPage() {
       </div>
 
       {org?.treasuryConfAccount && <TreasuryCard treasuryAccount={org.treasuryConfAccount} />}
-
-      {/* Payroll Flow Sankey Chart */}
-      {stats && (
-        <PayrollFlowChart
-          data={{
-            treasuryTotal:
-              Number(stats.financials.totalPaidAmount || 0) / 1_000_000 +
-              stats.claims.pending * 1000, // estimated pending amount
-            activePayruns: Number(stats.financials.totalPaidAmount || 0) / 1_000_000,
-            pendingClaims: stats.claims.pending * 1000, // estimated per-claim amount
-            claimedAmount: Number(stats.financials.totalPaidAmount || 0) / 1_000_000,
-            expiredAmount: 0,
-            byWorkerType: {
-              employees: (Number(stats.financials.totalPaidAmount || 0) / 1_000_000) * 0.7,
-              contractors: (Number(stats.financials.totalPaidAmount || 0) / 1_000_000) * 0.3,
-            },
-          }}
-          className="mb-8"
-        />
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="glass-card rounded-xl p-6">

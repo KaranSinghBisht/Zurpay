@@ -138,10 +138,10 @@ export default function ClaimsPage() {
 
       {claims.length === 0 ? (
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 rounded-xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-zinc-800 flex items-center justify-center">
+          <div className="bg-gradient-to-br from-emerald-900/20 to-zinc-900 border border-emerald-800/50 rounded-xl p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-lg bg-emerald-900/30 flex items-center justify-center">
               <svg
-                className="w-8 h-8 text-zinc-400"
+                className="w-8 h-8 text-emerald-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -154,16 +154,21 @@ export default function ClaimsPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold mb-2">No Claims Found</h3>
+            <h3 className="text-xl font-semibold mb-2">Check Your Email</h3>
             <p className="text-zinc-400 max-w-md mx-auto mb-4">
-              No pending claims were found for this wallet. If you received a claim link from your
-              employer, use that link directly to claim your salary.
+              For your privacy, claims are not linked to wallet addresses. When your employer
+              creates a payrun, you&apos;ll receive a secure claim link via email.
             </p>
-            <div className="inline-flex items-center gap-2 text-sm text-emerald-400">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+            <div className="inline-flex items-center gap-2 text-sm text-emerald-400 bg-emerald-900/20 px-4 py-2 rounded-lg">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
               </svg>
-              <span>Claim links look like: zurpay.app/claims/...?token=...</span>
+              <span>This protects your wallet identity from your employer</span>
             </div>
           </div>
 
