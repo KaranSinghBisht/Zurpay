@@ -104,7 +104,8 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
 
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/.*\.vercel\.app$/,
-  /^https:\/\/.*\.herokuapp\.com$/,
+  /^https:\/\/.*\.railway\.app$/,
+  /^https:\/\/.*\.up\.railway\.app$/,
   /^https:\/\/.*\.ngrok-free\.app$/,
   /^https:\/\/.*\.ngrok\.io$/,
 ];
