@@ -8,6 +8,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { SolanaProviders } from './SolanaProviders';
 import AuthProvider from './AuthProvider';
+import { APP_URLS } from '../lib/app-urls';
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -97,6 +98,23 @@ function Navigation() {
           {link.label}
         </Link>
       ))}
+      <span className="text-zinc-700">|</span>
+      <a
+        href={APP_URLS.admin}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-zinc-400 hover:text-white transition-colors"
+      >
+        Admin
+      </a>
+      <a
+        href={APP_URLS.docs}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-zinc-400 hover:text-white transition-colors"
+      >
+        Docs
+      </a>
     </nav>
   );
 }

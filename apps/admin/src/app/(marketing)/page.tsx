@@ -5,6 +5,7 @@ import { LaptopMockup } from '../../components/LaptopMockup';
 import { FeaturesGrid } from '../../components/FeaturesGrid';
 import { HowItWorks } from '../../components/HowItWorks';
 import { SmartLaunchButton } from '../../components/SmartLaunchButton';
+import { APP_URLS } from '../../lib/app-urls';
 
 export default function LandingPage() {
   return (
@@ -31,10 +32,16 @@ export default function LandingPage() {
             <a href="#how-it-works" className="text-zinc-400 hover:text-white transition-colors">
               How it Works
             </a>
+            <a href={APP_URLS.docs} className="text-zinc-400 hover:text-white transition-colors">
+              Docs
+            </a>
             <a
-              href="https://github.com"
+              href={APP_URLS.employee}
               className="text-zinc-400 hover:text-white transition-colors"
             >
+              Employee Portal
+            </a>
+            <a href={APP_URLS.github} className="text-zinc-400 hover:text-white transition-colors">
               GitHub
             </a>
           </div>
@@ -222,14 +229,14 @@ export default function LandingPage() {
           </div>
           <p className="text-zinc-500 text-sm">Built for Solana Privacy Hackathon 2026</p>
           <div className="flex items-center gap-6 text-zinc-500 text-sm">
-            <a href="#" className="hover:text-white transition-colors">
+            <a href={APP_URLS.github} className="hover:text-white transition-colors">
               GitHub
             </a>
-            <a href="#" className="hover:text-white transition-colors">
+            <a href={APP_URLS.docs} className="hover:text-white transition-colors">
               Docs
             </a>
-            <a href="#" className="hover:text-white transition-colors">
-              Twitter
+            <a href={APP_URLS.employee} className="hover:text-white transition-colors">
+              Employee Portal
             </a>
           </div>
         </div>

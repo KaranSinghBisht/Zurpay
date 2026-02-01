@@ -15,6 +15,8 @@ import {
   CheckCircle,
   Calendar,
   FileText,
+  ExternalLink,
+  BookOpen,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -22,6 +24,7 @@ import { usePathname } from 'next/navigation';
 import { SolanaProviders } from '../../components/SolanaProviders';
 import { WalletButton } from '../../components/WalletButton';
 import { SidebarOrgSection } from '../../components/SidebarOrgSection';
+import { APP_URLS } from '../../lib/app-urls';
 import '../globals.css';
 
 const SidebarItem = memo(function SidebarItem({
@@ -143,6 +146,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
 
                 <div className="flex items-center gap-4">
+                  <div className="hidden lg:flex items-center gap-2">
+                    <a
+                      href={APP_URLS.docs}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      <BookOpen size={16} />
+                      Docs
+                    </a>
+                    <a
+                      href={APP_URLS.employee}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                      <ExternalLink size={16} />
+                      Employee Portal
+                    </a>
+                  </div>
+                  <div className="h-8 w-px bg-white/10 hidden lg:block" />
                   <button className="relative p-2 hover:bg-white/5 rounded-lg transition-colors">
                     <Bell size={20} className="text-gray-400" />
                     <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-dark" />

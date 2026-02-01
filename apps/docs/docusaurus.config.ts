@@ -2,6 +2,9 @@ import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
+const ADMIN_URL = process.env.ADMIN_URL || 'http://localhost:3000';
+const EMPLOYEE_URL = process.env.EMPLOYEE_URL || 'http://localhost:3002';
+
 const config: Config = {
   title: 'Zurpay',
   tagline: 'Confidential payroll on Solana — amounts encrypted, claims gated by ZK',
@@ -61,8 +64,13 @@ const config: Config = {
           label: 'Documentation',
         },
         {
-          href: 'https://zurpay.xyz',
-          label: 'Launch App',
+          href: ADMIN_URL,
+          label: 'Admin Dashboard',
+          position: 'right',
+        },
+        {
+          href: EMPLOYEE_URL,
+          label: 'Employee Portal',
           position: 'right',
         },
         {
@@ -93,11 +101,15 @@ const config: Config = {
           ],
         },
         {
-          title: 'Resources',
+          title: 'Apps',
           items: [
             {
-              label: 'Launch App',
-              href: 'https://zurpay.xyz',
+              label: 'Admin Dashboard',
+              href: ADMIN_URL,
+            },
+            {
+              label: 'Employee Portal',
+              href: EMPLOYEE_URL,
             },
             {
               label: 'Solana Explorer',
