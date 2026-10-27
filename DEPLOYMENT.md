@@ -21,8 +21,6 @@
 | **Wallet Address** | `9MzroaivQjCoqQd36ZFUhNPQBgtPLnfKWvAAVbwHKmYE` |
 | **Keypair Path** | `~/.config/solana/id.json` |
 
-> ⚠️ **Seed Phrase (backup):** `equal hotel taxi casual grunt often grain grain joy bread garlic head`
-
 ---
 
 ## 📁 Key Files
